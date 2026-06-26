@@ -12,7 +12,14 @@ export interface JwtPayload {
 export class BearerStrategy extends PassportStrategy(Strategy, 'bearer') {
   constructor(private readonly supabase: SupabaseService) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        (req) => {
+          const auth: string = req?.headers?.authorization ?? '';
+          if (auth && !auth.startsWith('Bearer ')) return auth;
+          return null;
+        },
+      ]),
       ignoreExpiration: false,
       secretOrKey: process.env.JWT_SECRET!,
     });
