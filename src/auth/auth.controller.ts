@@ -29,9 +29,7 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Refresh tokens — old refresh token is invalidated, new pair issued',
-  })
+  @ApiOperation({ summary: 'Refresh tokens — old refresh token is invalidated, new pair issued' })
   @ApiResponse({ status: 200, description: 'Returns new token pair' })
   @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
   refresh(@Body() dto: RefreshTokenDto) {
