@@ -1,6 +1,7 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
+import { AppTokenDto } from './dto/app-token.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -42,5 +43,27 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Logged out successfully' })
   logout(@Body() dto: RefreshTokenDto) {
     return this.authService.logout(dto);
+  }
+
+  @Post('app-token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Machine-to-Machine token — get a JWT using APP_SECRET (no user login required)',
+    description: 'Use this from your Next.js server to obtain a JWT for calling protected APIs. Re-call when the token expires.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns a short-lived access token',
+    schema: {
+      example: {
+        accessToken: 'eyJhbGci...',
+        tokenType: 'Bearer',
+        expiresIn: '1h',
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Invalid app secret' })
+  appToken(@Body() dto: AppTokenDto) {
+    return this.authService.appToken(dto);
   }
 }
