@@ -37,11 +37,6 @@ export class CreateUserDto {
   @IsUUID('all', { message: 'module_type_id must be a valid UUID.' })
   module_type_id: string;
 
-  @ApiPropertyOptional({ example: 'uuid-of-seo', description: 'SEO Profile ID (UUID)' })
-  @IsOptional()
-  @IsUUID('all', { message: 'seo_id must be a valid UUID.' })
-  seo_id?: string;
-
   @ApiPropertyOptional({ example: 'A short bio about this user.', description: 'Max 5000 chars' })
   @IsOptional()
   @IsString()

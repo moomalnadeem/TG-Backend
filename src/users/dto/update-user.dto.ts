@@ -36,11 +36,6 @@ export class UpdateUserDto {
   @IsUUID('all', { message: 'module_type_id must be a valid UUID.' })
   module_type_id?: string;
 
-  @ApiPropertyOptional({ example: 'uuid-of-seo' })
-  @IsOptional()
-  @IsUUID('all', { message: 'seo_id must be a valid UUID.' })
-  seo_id?: string;
-
   @ApiPropertyOptional({ example: 'Updated bio.' })
   @IsOptional()
   @IsString()

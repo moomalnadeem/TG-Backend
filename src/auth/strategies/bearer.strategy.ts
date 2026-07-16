@@ -6,6 +6,7 @@ import { SupabaseService } from '../../supabase/supabase.service';
 export interface JwtPayload {
   sub: string;
   email: string;
+  type?: 'm2m';
 }
 
 @Injectable()
@@ -26,6 +27,10 @@ export class BearerStrategy extends PassportStrategy(Strategy, 'bearer') {
   }
 
   async validate(payload: JwtPayload) {
+    if (payload.type === 'm2m') {
+      return { id: 'm2m', email: 'app@system', is_active: true };
+    }
+
     const { data: user, error } = await this.supabase.db
       .from('users')
       .select('id, email, first_name, last_name, is_active')

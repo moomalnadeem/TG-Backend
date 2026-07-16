@@ -12,21 +12,41 @@ import { ListUsersDto } from './dto/list-users.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-const STORAGE_BUCKET = 'user-uploads';
 
-const ALTER_TABLE_SQL = `
-  ALTER TABLE users ADD COLUMN IF NOT EXISTS username     VARCHAR(100);
-  ALTER TABLE users ADD COLUMN IF NOT EXISTS name         VARCHAR(255);
-  ALTER TABLE users ADD COLUMN IF NOT EXISTS role_id      UUID;
+const SETUP_SQL = `
+  CREATE TABLE IF NOT EXISTS users (
+    id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    username       VARCHAR(100) UNIQUE,
+    name           VARCHAR(255),
+    email          VARCHAR(255) NOT NULL UNIQUE,
+    password       VARCHAR(255),
+    role_id        UUID,
+    module_type_id UUID,
+    image          VARCHAR(500),
+    banner         VARCHAR(500),
+    description    TEXT,
+    publish_status BOOLEAN      NOT NULL DEFAULT true,
+    is_active      BOOLEAN      NOT NULL DEFAULT true,
+    created_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    deleted_at     TIMESTAMPTZ
+  );
+
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS username       VARCHAR(100);
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS name           VARCHAR(255);
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS password       VARCHAR(255);
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS role_id        UUID;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS module_type_id UUID;
-  ALTER TABLE users ADD COLUMN IF NOT EXISTS seo_id       UUID;
-  ALTER TABLE users ADD COLUMN IF NOT EXISTS image        VARCHAR(500);
-  ALTER TABLE users ADD COLUMN IF NOT EXISTS banner       VARCHAR(500);
-  ALTER TABLE users ADD COLUMN IF NOT EXISTS description  TEXT;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS image          VARCHAR(500);
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS banner         VARCHAR(500);
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS description    TEXT;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS publish_status BOOLEAN NOT NULL DEFAULT true;
-  ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW();
-  ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at   TIMESTAMPTZ;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active      BOOLEAN NOT NULL DEFAULT true;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW();
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at     TIMESTAMPTZ;
+
   CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username        ON users(username) WHERE username IS NOT NULL;
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email           ON users(email);
   CREATE INDEX        IF NOT EXISTS idx_users_role_id          ON users(role_id);
   CREATE INDEX        IF NOT EXISTS idx_users_module_type_id   ON users(module_type_id);
   CREATE INDEX        IF NOT EXISTS idx_users_publish_status   ON users(publish_status);
@@ -46,7 +66,7 @@ export class UsersService {
 
   async setup(): Promise<{ success: boolean; message: string; data: object }> {
     // Ensure storage bucket exists
-    await this.supabase.db.storage.createBucket(STORAGE_BUCKET, { public: true }).catch(() => {});
+    await this.supabase.db.storage.createBucket(process.env.STORAGE_BUCKET!, { public: true }).catch(() => {});
 
     const res = await fetch(
       `https://api.supabase.com/v1/projects/${process.env.SUPABASE_PROJECT_REF}/database/query`,
@@ -56,7 +76,7 @@ export class UsersService {
           Authorization: `Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query: ALTER_TABLE_SQL }),
+        body: JSON.stringify({ query: SETUP_SQL }),
       },
     );
 
@@ -68,7 +88,7 @@ export class UsersService {
     return {
       success: true,
       message: 'Users table migrated successfully.',
-      data: { bucket: STORAGE_BUCKET },
+      data: { bucket: process.env.STORAGE_BUCKET },
     };
   }
 
@@ -77,7 +97,7 @@ export class UsersService {
   async create(dto: CreateUserDto, files: UploadedFiles): Promise<{ success: boolean; message: string; data: object }> {
     await this.assertUniqueUsername(dto.username);
     await this.assertUniqueEmail(dto.email);
-    await this.validateRelations(dto.role_id, dto.module_type_id, dto.seo_id);
+    await this.validateRelations(dto.role_id, dto.module_type_id);
 
     const imageUrl = files?.image?.[0] ? await this.uploadFile(files.image[0], 'images') : null;
     const bannerUrl = files?.banner?.[0] ? await this.uploadFile(files.banner[0], 'banners') : null;
@@ -93,14 +113,13 @@ export class UsersService {
         password: placeholderPassword,
         role_id: dto.role_id,
         module_type_id: dto.module_type_id,
-        seo_id: dto.seo_id ?? null,
         image: imageUrl,
         banner: bannerUrl,
         description: dto.description ?? null,
         publish_status: dto.publish_status,
         is_active: true,
       })
-      .select('id, username, name, email, role_id, module_type_id, seo_id, image, banner, publish_status')
+      .select('id, username, name, email, role_id, module_type_id, image, banner, publish_status')
       .single();
 
     if (error) throw new Error(error.message);
@@ -117,7 +136,6 @@ export class UsersService {
       search,
       role_id,
       module_type_id,
-      seo_id,
       publish_status,
       sortBy = 'created_at',
       sortOrder = 'DESC',
@@ -129,7 +147,7 @@ export class UsersService {
     let dbQuery = this.supabase.db
       .from('users')
       .select(
-        'id, username, name, email, image, publish_status, role_id, module_type_id, seo_id, created_at',
+        'id, username, name, email, image, publish_status, role_id, module_type_id, created_at',
         { count: 'exact' },
       )
       .is('deleted_at', null);
@@ -141,7 +159,6 @@ export class UsersService {
 
     if (role_id) dbQuery = dbQuery.eq('role_id', role_id);
     if (module_type_id) dbQuery = dbQuery.eq('module_type_id', module_type_id);
-    if (seo_id) dbQuery = dbQuery.eq('seo_id', seo_id);
     if (publish_status !== undefined) dbQuery = dbQuery.eq('publish_status', publish_status);
 
     const { data: users, error, count } = await dbQuery
@@ -165,7 +182,7 @@ export class UsersService {
     const { data, error } = await this.supabase.db
       .from('users')
       .select(
-        'id, username, name, email, image, banner, description, publish_status, role_id, module_type_id, seo_id, created_at, updated_at',
+        'id, username, name, email, image, banner, description, publish_status, role_id, module_type_id, created_at, updated_at',
       )
       .eq('id', id)
       .is('deleted_at', null)
@@ -191,8 +208,8 @@ export class UsersService {
 
     if (dto.username) await this.assertUniqueUsername(dto.username, id);
     if (dto.email) await this.assertUniqueEmail(dto.email, id);
-    if (dto.role_id || dto.module_type_id || dto.seo_id) {
-      await this.validateRelations(dto.role_id, dto.module_type_id, dto.seo_id);
+    if (dto.role_id || dto.module_type_id) {
+      await this.validateRelations(dto.role_id, dto.module_type_id);
     }
 
     const updates: Record<string, any> = { ...dto, updated_at: new Date().toISOString() };
@@ -244,14 +261,16 @@ export class UsersService {
     const ext = file.originalname.split('.').pop() ?? 'jpg';
     const path = `${folder}/${Date.now()}-${randomUUID()}.${ext}`;
 
+    const bucket = process.env.STORAGE_BUCKET!;
+
     const { data, error } = await this.supabase.db.storage
-      .from(STORAGE_BUCKET)
+      .from(bucket)
       .upload(path, file.buffer, { contentType: file.mimetype, upsert: true });
 
     if (error) throw new Error(`File upload failed: ${error.message}`);
 
     const { data: { publicUrl } } = this.supabase.db.storage
-      .from(STORAGE_BUCKET)
+      .from(bucket)
       .getPublicUrl(data.path);
 
     return publicUrl;
@@ -262,29 +281,23 @@ export class UsersService {
 
     const roleIds = [...new Set(users.filter(u => u.role_id).map(u => u.role_id))];
     const moduleIds = [...new Set(users.filter(u => u.module_type_id).map(u => u.module_type_id))];
-    const seoIds = [...new Set(users.filter(u => u.seo_id).map(u => u.seo_id))];
 
-    const [rolesRes, modulesRes, seoRes] = await Promise.all([
+    const [rolesRes, modulesRes] = await Promise.all([
       roleIds.length
         ? this.supabase.db.from('roles').select('id, name').in('id', roleIds)
         : { data: [] },
       moduleIds.length
         ? this.supabase.db.from('modules').select('id, module_name').in('id', moduleIds)
         : { data: [] },
-      seoIds.length
-        ? this.supabase.db.from('seo').select('id, seo_title').in('id', seoIds)
-        : { data: [] },
     ]);
 
     const roleMap = Object.fromEntries((rolesRes.data ?? []).map(r => [r.id, r]));
     const moduleMap = Object.fromEntries((modulesRes.data ?? []).map(m => [m.id, m]));
-    const seoMap = Object.fromEntries((seoRes.data ?? []).map(s => [s.id, s]));
 
     return users.map(u => ({
       ...u,
       role: u.role_id ? (roleMap[u.role_id] ?? null) : null,
       module_type: u.module_type_id ? (moduleMap[u.module_type_id] ?? null) : null,
-      seo: u.seo_id ? (seoMap[u.seo_id] ?? null) : null,
     }));
   }
 
@@ -328,7 +341,7 @@ export class UsersService {
     if (data) throw new ConflictException('Email already exists.');
   }
 
-  private async validateRelations(roleId?: string, moduleTypeId?: string, seoId?: string) {
+  private async validateRelations(roleId?: string, moduleTypeId?: string) {
     if (roleId) {
       const { data } = await this.supabase.db
         .from('roles')
@@ -347,15 +360,6 @@ export class UsersService {
         .is('deleted_at', null)
         .single();
       if (!data) throw new NotFoundException('Module type not found.');
-    }
-
-    if (seoId) {
-      const { data } = await this.supabase.db
-        .from('seo')
-        .select('id')
-        .eq('id', seoId)
-        .single();
-      if (!data) throw new NotFoundException('SEO profile not found.');
     }
   }
 }
