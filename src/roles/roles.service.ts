@@ -119,6 +119,21 @@ export class RolesService {
     return { rolesSeeded, skippedRoles };
   }
 
+  // ─── Dropdown ────────────────────────────────────────────────────────────────
+
+  async dropdown(): Promise<{ success: boolean; data: object[] }> {
+    const { data, error } = await this.supabase.db
+      .from('roles')
+      .select('id, name')
+      .eq('status', true)
+      .is('deleted_at', null)
+      .order('name', { ascending: true });
+
+    if (error) throw new Error(error.message);
+
+    return { success: true, data: data ?? [] };
+  }
+
   // ─── Create ──────────────────────────────────────────────────────────────────
 
   async create(dto: CreateRoleDto): Promise<{ success: boolean; message: string }> {

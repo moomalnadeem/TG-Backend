@@ -34,6 +34,16 @@ export class RolesController {
     return this.rolesService.setup();
   }
 
+  @Get('dropdown')
+  @ApiOperation({ summary: 'Roles dropdown — returns id and name for all active, non-deleted roles' })
+  @ApiResponse({
+    status: 200,
+    schema: { example: { success: true, data: [{ id: 'uuid', name: 'Admin' }] } },
+  })
+  dropdown() {
+    return this.rolesService.dropdown();
+  }
+
   @Post()
   @ApiOperation({ summary: 'Create a new role' })
   @ApiResponse({ status: 201, description: 'Role created successfully' })
