@@ -1,12 +1,31 @@
-import { ValidationPipe } from '@nestjs/common';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.useGlobalFilters(new HttpExceptionFilter());
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      exceptionFactory: (errors) => {
+        const result: Record<string, string[]> = {};
+        errors.forEach((error) => {
+          result[error.property] = Object.values(error.constraints ?? {});
+        });
+        return new BadRequestException({
+          success: false,
+          message: 'Validation Failed',
+          errors: result,
+        });
+      },
+    }),
+  );
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('TG Backend API')
@@ -24,9 +43,7 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('docs', app, document, {
-    swaggerOptions: {
-      persistAuthorization: true,
-    },
+    swaggerOptions: { persistAuthorization: true },
     customJsStr: `
       (function () {
         const _fetch = window.fetch;

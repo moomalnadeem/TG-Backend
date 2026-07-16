@@ -32,11 +32,6 @@ export class ListUsersDto {
   @IsUUID()
   module_type_id?: string;
 
-  @ApiPropertyOptional({ example: 'uuid-of-seo', description: 'Filter by SEO profile ID' })
-  @IsOptional()
-  @IsUUID()
-  seo_id?: string;
-
   @ApiPropertyOptional({ example: true, description: 'Filter by publish status' })
   @IsOptional()
   @Transform(({ value }) => {

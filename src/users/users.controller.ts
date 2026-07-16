@@ -66,7 +66,6 @@ export class UsersController {
         email:          { type: 'string', format: 'email', example: 'john@example.com' },
         role_id:        { type: 'string', format: 'uuid', example: 'uuid-of-role' },
         module_type_id: { type: 'string', format: 'uuid', example: 'uuid-of-module' },
-        seo_id:         { type: 'string', format: 'uuid', example: 'uuid-of-seo', nullable: true },
         description:    { type: 'string', maxLength: 5000, example: 'A short bio.', nullable: true },
         publish_status: { type: 'boolean', example: true },
         image:          { type: 'string', format: 'binary', description: 'Profile image (jpg, jpeg, png, webp)' },
@@ -95,7 +94,6 @@ export class UsersController {
   @ApiQuery({ name: 'search', required: false, example: 'john', description: 'Search by username, name, email, role name, module name' })
   @ApiQuery({ name: 'role_id', required: false, description: 'Filter by role UUID' })
   @ApiQuery({ name: 'module_type_id', required: false, description: 'Filter by module type UUID' })
-  @ApiQuery({ name: 'seo_id', required: false, description: 'Filter by SEO profile UUID' })
   @ApiQuery({ name: 'publish_status', required: false, example: true })
   @ApiQuery({ name: 'sortBy', required: false, enum: ['username', 'name', 'email', 'created_at', 'updated_at'] })
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['ASC', 'DESC'] })
@@ -136,7 +134,6 @@ export class UsersController {
         email:          { type: 'string', format: 'email', example: 'john.updated@example.com' },
         role_id:        { type: 'string', format: 'uuid' },
         module_type_id: { type: 'string', format: 'uuid' },
-        seo_id:         { type: 'string', format: 'uuid', nullable: true },
         description:    { type: 'string', maxLength: 5000 },
         publish_status: { type: 'boolean' },
         image:          { type: 'string', format: 'binary', description: 'Replace profile image' },

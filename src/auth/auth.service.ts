@@ -7,6 +7,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { SupabaseService } from '../supabase/supabase.service';
+import { AppTokenDto } from './dto/app-token.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -109,6 +110,18 @@ export class AuthService {
 
     // 5. Issue a brand new token pair
     return this.issueTokenPair(user.id, user.email);
+  }
+
+  async appToken(dto: AppTokenDto): Promise<{ accessToken: string; tokenType: 'Bearer'; expiresIn: string }> {
+    if (!process.env.APP_SECRET || dto.app_secret !== process.env.APP_SECRET) {
+      throw new UnauthorizedException('Invalid app secret.');
+    }
+    const expiresIn = (process.env.APP_TOKEN_EXPIRES_IN ?? '1h') as any;
+    const accessToken = this.jwtService.sign(
+      { sub: 'm2m', email: 'app@system', type: 'm2m' },
+      { secret: process.env.JWT_SECRET, expiresIn },
+    );
+    return { accessToken, tokenType: 'Bearer', expiresIn };
   }
 
   async logout(dto: RefreshTokenDto): Promise<{ success: boolean; message: string }> {
