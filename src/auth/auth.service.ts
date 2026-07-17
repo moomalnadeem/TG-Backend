@@ -1,23 +1,19 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { randomUUID } from 'crypto';
 import { SupabaseService } from '../supabase/supabase.service';
 import { AppTokenDto } from './dto/app-token.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { RegisterDto } from './dto/register.dto';
-
-export interface TokenPair {
-  accessToken: string;
-  refreshToken: string;
-  tokenType: 'Bearer';
-  expiresIn: string;
-}
+import { SignupDto } from './dto/signup.dto';
 
 @Injectable()
 export class AuthService {
@@ -26,143 +22,304 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async register(dto: RegisterDto): Promise<{ success: boolean; message: string }> {
-    const { data: existing } = await this.supabase.db
+  // ─── Signup ──────────────────────────────────────────────────────────────────
+
+  async signup(dto: SignupDto) {
+    if (dto.password !== dto.confirm_password) {
+      throw new BadRequestException('Password and confirm password do not match.');
+    }
+
+    // Check role exists
+    const { data: role } = await this.supabase.db
+      .from('roles')
+      .select('id, name')
+      .eq('id', dto.role_id)
+      .is('deleted_at', null)
+      .single();
+    if (!role) throw new NotFoundException('Role not found.');
+
+    // Check email uniqueness
+    const { data: emailExists } = await this.supabase.db
       .from('users')
       .select('id')
       .eq('email', dto.email)
-      .single();
+      .is('deleted_at', null)
+      .maybeSingle();
+    if (emailExists) throw new ConflictException('Email already in use.');
 
-    if (existing) {
-      throw new ConflictException('Email already in use');
+    // Check username uniqueness
+    if (dto.username) {
+      const { data: usernameExists } = await this.supabase.db
+        .from('users')
+        .select('id')
+        .eq('username', dto.username)
+        .is('deleted_at', null)
+        .maybeSingle();
+      if (usernameExists) throw new ConflictException('Username already in use.');
+    }
+
+    // Check phone uniqueness
+    if (dto.phone_number) {
+      const { data: phoneExists } = await this.supabase.db
+        .from('users')
+        .select('id')
+        .eq('phone_number', dto.phone_number)
+        .is('deleted_at', null)
+        .maybeSingle();
+      if (phoneExists) throw new ConflictException('Phone number already in use.');
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    const { error } = await this.supabase.db.from('users').insert({
-      first_name: dto.firstName,
-      last_name: dto.lastName,
+    const insertData: Record<string, any> = {
+      name: dto.name,
       email: dto.email,
       password: hashedPassword,
+      role_id: dto.role_id,
+      publish_status: true,
       is_active: true,
-    });
+    };
+    if (dto.username) insertData.username = dto.username;
+    if (dto.phone_number) insertData.phone_number = dto.phone_number;
+
+    const { data: user, error } = await this.supabase.db
+      .from('users')
+      .insert(insertData)
+      .select('id, username, name, email, phone_number, role_id')
+      .single();
 
     if (error) throw new Error(error.message);
 
-    return { success: true, message: 'User registered successfully' };
+    const { access_token, refresh_token, expires_in } = await this.issueTokens(user);
+
+    return {
+      success: true,
+      message: 'Account created successfully.',
+      data: {
+        user: { ...user, role },
+        access_token,
+        refresh_token,
+        expires_in,
+      },
+    };
   }
 
-  async login(dto: LoginDto): Promise<TokenPair> {
+  // ─── Login ───────────────────────────────────────────────────────────────────
+
+  async adminLogin(dto: LoginDto) {
+    const login = dto.login.trim();
+
     const { data: user } = await this.supabase.db
       .from('users')
-      .select('id, email, password, is_active')
-      .eq('email', dto.email)
-      .single();
+      .select('id, username, name, email, phone_number, role_id, publish_status, password')
+      .or(`username.eq.${login},email.eq.${login},phone_number.eq.${login}`)
+      .is('deleted_at', null)
+      .maybeSingle();
 
-    if (!user) throw new UnauthorizedException('Invalid email or password');
+    if (!user) {
+      throw new UnauthorizedException('Invalid username, email, phone number or password.');
+    }
 
-    const passwordValid = await bcrypt.compare(dto.password, user.password);
-    if (!passwordValid) throw new UnauthorizedException('Invalid email or password');
+    const passwordValid = await bcrypt.compare(dto.password, user.password ?? '');
+    if (!passwordValid) {
+      throw new UnauthorizedException('Invalid username, email, phone number or password.');
+    }
 
-    if (!user.is_active) throw new UnauthorizedException('Account is inactive');
+    if (!user.publish_status) {
+      throw new UnauthorizedException('Account is inactive.');
+    }
 
-    return this.issueTokenPair(user.id, user.email);
+    const { access_token, refresh_token, expires_in } = await this.issueTokens(user);
+
+    const { password: _pwd, ...safeUser } = user;
+
+    return {
+      success: true,
+      message: 'Login successful.',
+      data: { user: safeUser, access_token, refresh_token, expires_in },
+    };
   }
 
-  async refresh(dto: RefreshTokenDto): Promise<TokenPair> {
-    // 1. Verify signature and expiry
-    let payload: { sub: string; email: string; jti: string };
+  // ─── Refresh Token ───────────────────────────────────────────────────────────
+
+  async refreshAccessToken(dto: RefreshTokenDto) {
+    let payload: { sub: string };
     try {
-      payload = this.jwtService.verify(dto.refreshToken, {
+      payload = this.jwtService.verify(dto.refresh_token, {
         secret: process.env.REFRESH_TOKEN_SECRET,
       });
     } catch (err: any) {
-      const message = err?.name === 'TokenExpiredError' ? 'Refresh token expired' : 'Invalid refresh token';
-      throw new UnauthorizedException(message);
+      const msg =
+        err?.name === 'TokenExpiredError' ? 'Refresh token expired.' : 'Invalid refresh token.';
+      throw new UnauthorizedException(msg);
     }
 
-    // 2. Check JTI exists in DB (one-time use)
-    const { data: storedToken } = await this.supabase.db
-      .from('refresh_tokens')
-      .select('id, user_id, expires_at')
-      .eq('jti', payload.jti)
-      .single();
-
-    if (!storedToken) {
-      // Token reuse detected — could be stolen; invalidate all sessions for safety
-      await this.supabase.db.from('refresh_tokens').delete().eq('user_id', payload.sub);
-      throw new UnauthorizedException('Refresh token already used or revoked');
-    }
-
-    // 3. Delete old token (rotation — old token is now dead)
-    await this.supabase.db.from('refresh_tokens').delete().eq('jti', payload.jti);
-
-    // 4. Confirm user is still active
     const { data: user } = await this.supabase.db
       .from('users')
-      .select('id, email, is_active')
+      .select('id, username, name, email, role_id, publish_status, refresh_token')
       .eq('id', payload.sub)
+      .is('deleted_at', null)
       .single();
 
-    if (!user || !user.is_active) {
-      throw new UnauthorizedException('Account is inactive');
+    if (!user || !user.publish_status) {
+      throw new UnauthorizedException('Account is inactive or not found.');
     }
 
-    // 5. Issue a brand new token pair
-    return this.issueTokenPair(user.id, user.email);
+    if (!user.refresh_token) {
+      throw new UnauthorizedException('Session expired. Please log in again.');
+    }
+
+    const valid = await bcrypt.compare(dto.refresh_token, user.refresh_token);
+    if (!valid) throw new UnauthorizedException('Invalid refresh token.');
+
+    const tokens = await this.issueTokens(user);
+
+    return {
+      success: true,
+      message: 'Token refreshed successfully.',
+      data: tokens,
+    };
   }
 
-  async appToken(dto: AppTokenDto): Promise<{ accessToken: string; tokenType: 'Bearer'; expiresIn: string }> {
+  // ─── Profile ─────────────────────────────────────────────────────────────────
+
+  async getProfile(userId: string) {
+    const { data, error } = await this.supabase.db
+      .from('users')
+      .select('id, username, name, email, phone_number, role_id, publish_status')
+      .eq('id', userId)
+      .is('deleted_at', null)
+      .single();
+
+    if (error || !data) throw new NotFoundException('User not found.');
+
+    let role: { id: any; name: any } | null = null;
+    if (data.role_id) {
+      const { data: roleData } = await this.supabase.db
+        .from('roles')
+        .select('id, name')
+        .eq('id', data.role_id)
+        .single();
+      role = roleData ?? null;
+    }
+
+    return { success: true, data: { ...data, role } };
+  }
+
+  // ─── Logout ──────────────────────────────────────────────────────────────────
+
+  async logout(userId: string) {
+    await this.supabase.db
+      .from('users')
+      .update({ refresh_token: null })
+      .eq('id', userId);
+
+    return { success: true, message: 'Logout successful.' };
+  }
+
+  // ─── Change Password ─────────────────────────────────────────────────────────
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    if (dto.new_password !== dto.confirm_password) {
+      throw new BadRequestException('New password and confirm password do not match.');
+    }
+
+    const { data: user } = await this.supabase.db
+      .from('users')
+      .select('password')
+      .eq('id', userId)
+      .is('deleted_at', null)
+      .single();
+
+    if (!user) throw new NotFoundException('User not found.');
+
+    const valid = await bcrypt.compare(dto.current_password, user.password ?? '');
+    if (!valid) throw new UnauthorizedException('Current password is incorrect.');
+
+    const hashed = await bcrypt.hash(dto.new_password, 10);
+
+    await this.supabase.db
+      .from('users')
+      .update({ password: hashed, updated_at: new Date().toISOString() })
+      .eq('id', userId);
+
+    return { success: true, message: 'Password changed successfully.' };
+  }
+
+  // ─── Forgot Password (Future-Ready) ──────────────────────────────────────────
+
+  async forgotPassword(_dto: ForgotPasswordDto) {
+    return {
+      success: true,
+      message: 'If this account exists, password reset instructions have been sent.',
+    };
+  }
+
+  // ─── M2M App Token ───────────────────────────────────────────────────────────
+
+  async appToken(dto: AppTokenDto) {
     if (!process.env.APP_SECRET || dto.app_secret !== process.env.APP_SECRET) {
       throw new UnauthorizedException('Invalid app secret.');
     }
+
     const expiresIn = (process.env.APP_TOKEN_EXPIRES_IN ?? '1h') as any;
-    const accessToken = this.jwtService.sign(
+    const access_token = this.jwtService.sign(
       { sub: 'm2m', email: 'app@system', type: 'm2m' },
       { secret: process.env.JWT_SECRET, expiresIn },
     );
-    return { accessToken, tokenType: 'Bearer', expiresIn };
+
+    return {
+      success: true,
+      data: {
+        access_token,
+        token_type: 'Bearer',
+        expires_in: expiresIn,
+      },
+    };
   }
 
-  async logout(dto: RefreshTokenDto): Promise<{ success: boolean; message: string }> {
-    try {
-      const payload: { jti: string } = this.jwtService.verify(dto.refreshToken, {
-        secret: process.env.REFRESH_TOKEN_SECRET,
-        ignoreExpiration: true,
-      });
-      await this.supabase.db.from('refresh_tokens').delete().eq('jti', payload.jti);
-    } catch {
-      // Ignore invalid tokens on logout — just return success
-    }
+  // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-    return { success: true, message: 'Logged out successfully' };
+  private async issueTokens(user: {
+    id: string;
+    username?: string;
+    email: string;
+    role_id?: string;
+  }) {
+    const accessExpiresIn = (process.env.JWT_EXPIRES_IN ?? '1h') as any;
+    const refreshExpiresIn = (process.env.REFRESH_TOKEN_EXPIRES_IN ?? '7d') as any;
+
+    const access_token = this.jwtService.sign(
+      { sub: user.id, username: user.username, email: user.email, role_id: user.role_id },
+      { secret: process.env.JWT_SECRET, expiresIn: accessExpiresIn },
+    );
+
+    const refresh_token = this.jwtService.sign(
+      { sub: user.id },
+      { secret: process.env.REFRESH_TOKEN_SECRET, expiresIn: refreshExpiresIn },
+    );
+
+    const hashedRefresh = await bcrypt.hash(refresh_token, 10);
+
+    await this.supabase.db
+      .from('users')
+      .update({
+        refresh_token: hashedRefresh,
+        last_login: new Date().toISOString(),
+      })
+      .eq('id', user.id);
+
+    return {
+      access_token,
+      refresh_token,
+      expires_in: this.parseExpiresInSeconds(accessExpiresIn),
+    };
   }
 
-  private async issueTokenPair(userId: string, email: string): Promise<TokenPair> {
-    const jti = randomUUID();
-    const accessExpiresIn = process.env.JWT_EXPIRES_IN ?? '1h';
-    const refreshExpiresIn = process.env.REFRESH_TOKEN_EXPIRES_IN ?? '7d';
-
-    const accessToken = this.jwtService.sign(
-      { sub: userId, email },
-      { secret: process.env.JWT_SECRET, expiresIn: accessExpiresIn as any },
-    );
-
-    const refreshToken = this.jwtService.sign(
-      { sub: userId, email, jti },
-      { secret: process.env.REFRESH_TOKEN_SECRET, expiresIn: refreshExpiresIn as any },
-    );
-
-    // Persist JTI so we can validate and rotate it later
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
-
-    await this.supabase.db.from('refresh_tokens').insert({
-      jti,
-      user_id: userId,
-      expires_at: expiresAt.toISOString(),
-    });
-
-    return { accessToken, refreshToken, tokenType: 'Bearer', expiresIn: accessExpiresIn };
+  private parseExpiresInSeconds(expiresIn: string): number {
+    const match = /^(\d+)([smhd])$/.exec(expiresIn ?? '1h');
+    if (!match) return 3600;
+    const units: Record<string, number> = { s: 1, m: 60, h: 3600, d: 86400 };
+    return parseInt(match[1], 10) * (units[match[2]] ?? 3600);
   }
 }

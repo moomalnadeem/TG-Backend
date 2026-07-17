@@ -3,37 +3,32 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { SupabaseService } from '../../supabase/supabase.service';
 
-export interface JwtPayload {
+export interface AdminJwtPayload {
   sub: string;
+  username?: string;
   email: string;
+  role_id?: string;
   type?: 'm2m';
 }
 
 @Injectable()
-export class BearerStrategy extends PassportStrategy(Strategy, 'bearer') {
+export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(private readonly supabase: SupabaseService) {
     super({
-      jwtFromRequest: ExtractJwt.fromExtractors([
-        ExtractJwt.fromAuthHeaderAsBearerToken(),
-        (req) => {
-          const auth: string = req?.headers?.authorization ?? '';
-          if (auth && !auth.startsWith('Bearer ')) return auth;
-          return null;
-        },
-      ]),
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: process.env.JWT_SECRET!,
     });
   }
 
-  async validate(payload: JwtPayload) {
+  async validate(payload: AdminJwtPayload) {
     if (payload.type === 'm2m') {
       return { id: 'm2m', email: 'app@system', publish_status: true };
     }
 
     const { data: user } = await this.supabase.db
       .from('users')
-      .select('id, username, name, email, role_id, publish_status, is_active')
+      .select('id, username, name, email, phone_number, role_id, publish_status, is_active')
       .eq('id', payload.sub)
       .is('deleted_at', null)
       .single();

@@ -20,11 +20,14 @@ const SETUP_SQL = `
     name           VARCHAR(255),
     email          VARCHAR(255) NOT NULL UNIQUE,
     password       VARCHAR(255),
+    phone_number   VARCHAR(20)  UNIQUE,
     role_id        UUID,
     module_type_id UUID,
     image          VARCHAR(500),
     banner         VARCHAR(500),
     description    TEXT,
+    refresh_token  TEXT,
+    last_login     TIMESTAMPTZ,
     publish_status BOOLEAN      NOT NULL DEFAULT true,
     is_active      BOOLEAN      NOT NULL DEFAULT true,
     created_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
@@ -35,8 +38,11 @@ const SETUP_SQL = `
   ALTER TABLE users ADD COLUMN IF NOT EXISTS username       VARCHAR(100);
   ALTER TABLE users ADD COLUMN IF NOT EXISTS name           VARCHAR(255);
   ALTER TABLE users ADD COLUMN IF NOT EXISTS password       VARCHAR(255);
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number   VARCHAR(20);
   ALTER TABLE users ADD COLUMN IF NOT EXISTS role_id        UUID;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS module_type_id UUID;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS refresh_token  TEXT;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login     TIMESTAMPTZ;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS image          VARCHAR(500);
   ALTER TABLE users ADD COLUMN IF NOT EXISTS banner         VARCHAR(500);
   ALTER TABLE users ADD COLUMN IF NOT EXISTS description    TEXT;
@@ -47,6 +53,7 @@ const SETUP_SQL = `
 
   CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username        ON users(username) WHERE username IS NOT NULL;
   CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email           ON users(email);
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone_number      ON users(phone_number) WHERE phone_number IS NOT NULL;
   CREATE INDEX        IF NOT EXISTS idx_users_role_id          ON users(role_id);
   CREATE INDEX        IF NOT EXISTS idx_users_module_type_id   ON users(module_type_id);
   CREATE INDEX        IF NOT EXISTS idx_users_publish_status   ON users(publish_status);

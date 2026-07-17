@@ -31,13 +31,9 @@ async function bootstrap() {
     .setTitle('TG Backend API')
     .setDescription('API documentation')
     .setVersion('1.0')
-    .addApiKey(
-      { type: 'apiKey', in: 'header', name: 'Authorization', description: 'Paste your JWT access token (no Bearer prefix needed)' },
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', description: 'Paste your JWT access token' },
       'bearer',
-    )
-    .addApiKey(
-      { type: 'apiKey', in: 'header', name: 'x-api-key', description: 'Paste your API key (starts with tg_...)' },
-      'api-key',
     )
     .build();
 
@@ -46,19 +42,51 @@ async function bootstrap() {
     swaggerOptions: { persistAuthorization: true },
     customJsStr: `
       (function () {
+        const AUTH_URLS = ['/api/auth/login', '/api/auth/app-token', '/api/auth/refresh-token'];
+
+        function applyToken(token, refreshToken) {
+          if (!window.ui) return;
+          window.ui.authActions.authorize({
+            bearer: {
+              name: 'bearer',
+              schema: { type: 'http', in: 'header', scheme: 'bearer', bearerFormat: 'JWT' },
+              value: token,
+            },
+          });
+          if (refreshToken) {
+            sessionStorage.setItem('tg_refresh_token', refreshToken);
+          }
+          sessionStorage.setItem('tg_access_token', token);
+        }
+
         const _fetch = window.fetch;
         window.fetch = async function (input, init) {
           const response = await _fetch(input, init);
           const url = typeof input === 'string' ? input : (input && input.url) || '';
-          if (url.includes('/auth/login') && response.status === 200) {
-            response.clone().json().then(function (data) {
-              if (data && data.accessToken && window.ui) {
-                window.ui.preauthorizeApiKey('bearer', data.accessToken);
-              }
+          const isAuthUrl = AUTH_URLS.some(function (u) { return url.includes(u); });
+          if (isAuthUrl && response.status === 200) {
+            response.clone().json().then(function (body) {
+              const d = body && body.data;
+              const token = d && (d.access_token || d.accessToken);
+              const refresh = d && (d.refresh_token || d.refreshToken);
+              if (token) applyToken(token, refresh);
             }).catch(function () {});
           }
           return response;
         };
+
+        // Restore token on page reload
+        window.addEventListener('load', function () {
+          const token = sessionStorage.getItem('tg_access_token');
+          if (token) {
+            var interval = setInterval(function () {
+              if (window.ui) {
+                clearInterval(interval);
+                applyToken(token, null);
+              }
+            }, 300);
+          }
+        });
       })();
     `,
   });
