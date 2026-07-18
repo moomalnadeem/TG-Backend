@@ -31,8 +31,8 @@ async function bootstrap() {
     .setTitle('TG Backend API')
     .setDescription('API documentation')
     .setVersion('1.0')
-    .addBearerAuth(
-      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', description: 'Paste your JWT access token' },
+    .addApiKey(
+      { type: 'apiKey', in: 'header', name: 'Authorization', description: 'Enter: Bearer YOUR_TOKEN' },
       'bearer',
     )
     .build();
@@ -46,17 +46,9 @@ async function bootstrap() {
 
         function applyToken(token, refreshToken) {
           if (!window.ui) return;
-          window.ui.authActions.authorize({
-            bearer: {
-              name: 'bearer',
-              schema: { type: 'http', in: 'header', scheme: 'bearer', bearerFormat: 'JWT' },
-              value: token,
-            },
-          });
-          if (refreshToken) {
-            sessionStorage.setItem('tg_refresh_token', refreshToken);
-          }
+          window.ui.preauthorizeApiKey('bearer', 'Bearer ' + token);
           sessionStorage.setItem('tg_access_token', token);
+          if (refreshToken) sessionStorage.setItem('tg_refresh_token', refreshToken);
         }
 
         const _fetch = window.fetch;
@@ -75,15 +67,11 @@ async function bootstrap() {
           return response;
         };
 
-        // Restore token on page reload
         window.addEventListener('load', function () {
           const token = sessionStorage.getItem('tg_access_token');
           if (token) {
             var interval = setInterval(function () {
-              if (window.ui) {
-                clearInterval(interval);
-                applyToken(token, null);
-              }
+              if (window.ui) { clearInterval(interval); applyToken(token, null); }
             }, 300);
           }
         });
