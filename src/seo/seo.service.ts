@@ -91,7 +91,41 @@ export class SeoService {
   async create(dto: CreateSeoDto): Promise<{ success: boolean; message: string; data: object }> {
     await this.validateModule(dto.module_id);
     await this.validateItem(dto.module_id, dto.item_id);
-    await this.assertUniqueModuleItem(dto.module_id, dto.item_id);
+
+    const SEO_FIELDS = 'id, title, description, keywords, canonical_url, sitemap_priority, sitemap_frequency, module_id, item_id, disable_for_bots, publish_status, created_at, updated_at';
+
+    // Upsert: if a record already exists for this item_id, update it instead
+    const { data: existing } = await this.supabase.db
+      .from('seo')
+      .select('id')
+      .eq('item_id', dto.item_id)
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    if (existing) {
+      const { data: updated, error } = await this.supabase.db
+        .from('seo')
+        .update({
+          title:             dto.title,
+          description:       dto.description,
+          keywords:          dto.keywords ?? null,
+          canonical_url:     dto.canonical_url ?? null,
+          sitemap_priority:  dto.sitemap_priority ?? 0.5,
+          sitemap_frequency: dto.sitemap_frequency,
+          module_id:         dto.module_id,
+          disable_for_bots:  dto.disable_for_bots ?? false,
+          publish_status:    dto.publish_status,
+          updated_at:        new Date().toISOString(),
+        })
+        .eq('id', existing.id)
+        .select(SEO_FIELDS)
+        .single();
+
+      if (error) throw new Error(error.message);
+
+      const [enriched] = await this.enrichWithRelations([updated]);
+      return { success: true, message: 'SEO record updated successfully.', data: enriched };
+    }
 
     const { data, error } = await this.supabase.db
       .from('seo')
@@ -107,7 +141,7 @@ export class SeoService {
         disable_for_bots:  dto.disable_for_bots ?? false,
         publish_status:    dto.publish_status,
       })
-      .select('id, title, description, keywords, canonical_url, sitemap_priority, sitemap_frequency, module_id, item_id, disable_for_bots, publish_status, created_at')
+      .select(SEO_FIELDS)
       .single();
 
     if (error) throw new Error(error.message);
