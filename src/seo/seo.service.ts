@@ -285,9 +285,6 @@ export class SeoService {
       return { success: true, message: 'SEO record updated successfully.', data: enriched };
     }
 
-    await this.validateModule(dto.module_id);
-    await this.validateItem(dto.module_id, itemId);
-
     const { data, error } = await this.supabase.db
       .from('seo')
       .insert({
