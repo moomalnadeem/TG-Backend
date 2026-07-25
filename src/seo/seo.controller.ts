@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -160,44 +159,40 @@ export class SeoController {
     return this.seoService.update(id, dto);
   }
 
-  // ─── Update by Item (with SEO ID ownership check) ────────────────────────────
+  // ─── Upsert by Item ──────────────────────────────────────────────────────────
 
   @Put('item/:item_id')
   @UseInterceptors(AnyFilesInterceptor())
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
-    summary: 'Update SEO by item_id — verifies the seo_id belongs to this item and module',
-    description: 'Pass seo_id + module_id as query params. The API validates that the SEO record with that ID is actually linked to the given item and module before updating.',
+    summary: 'Upsert SEO by item_id — updates if item_id exists, creates if not',
+    description: 'Looks up SEO by item_id only. If a record exists, updates all fields except item_id. If no record exists, creates a new one. item_id is always taken from the URL — never from the body.',
   })
-  @ApiParam({ name: 'item_id', description: 'Item UUID whose SEO you want to update' })
-  @ApiQuery({ name: 'seo_id',    required: true,  description: 'SEO record UUID — must match the SEO linked to this item' })
-  @ApiQuery({ name: 'module_id', required: true,  description: 'Module UUID this item belongs to' })
+  @ApiParam({ name: 'item_id', description: 'Item UUID' })
   @ApiBody({
     schema: {
       type: 'object',
+      required: ['title', 'description', 'sitemap_frequency', 'module_id', 'publish_status'],
       properties: {
-        title:             { type: 'string' },
-        description:       { type: 'string' },
-        keywords:          { type: 'string' },
-        canonical_url:     { type: 'string' },
-        sitemap_priority:  { type: 'number', description: '0.0 – 1.0' },
-        sitemap_frequency: { type: 'string', enum: [...SITEMAP_FREQUENCIES] },
-        disable_for_bots:  { type: 'boolean' },
-        publish_status:    { type: 'boolean' },
+        title:             { type: 'string', maxLength: 255, example: 'Dubai Tours - Best Packages' },
+        description:       { type: 'string', example: 'Explore Dubai with our top-rated tour packages...' },
+        keywords:          { type: 'string', example: 'dubai, tours, travel' },
+        canonical_url:     { type: 'string', example: 'https://example.com/tours/dubai' },
+        sitemap_priority:  { type: 'number', example: 0.8, description: '0.0 – 1.0' },
+        sitemap_frequency: { type: 'string', enum: [...SITEMAP_FREQUENCIES], example: 'weekly' },
+        module_id:         { type: 'string', format: 'uuid', example: 'uuid-of-module' },
+        disable_for_bots:  { type: 'boolean', example: false },
+        publish_status:    { type: 'boolean', example: true },
       },
     },
   })
-  @ApiResponse({ status: 200, description: 'SEO updated successfully' })
-  @ApiResponse({ status: 404, description: 'SEO record not found or seo_id does not belong to this item' })
-  updateByItem(
-    @Param('item_id')    itemId:   string,
-    @Query('seo_id')     seoId:    string,
-    @Query('module_id')  moduleId: string,
-    @Body() dto: UpdateSeoDto,
+  @ApiResponse({ status: 200, description: 'SEO record updated or created successfully' })
+  @ApiResponse({ status: 404, description: 'Module or item not found' })
+  upsertByItem(
+    @Param('item_id') itemId: string,
+    @Body() dto: CreateSeoDto,
   ) {
-    if (!seoId)    throw new BadRequestException('seo_id query param is required.');
-    if (!moduleId) throw new BadRequestException('module_id query param is required.');
-    return this.seoService.updateByItem(seoId, itemId, moduleId, dto);
+    return this.seoService.upsertByItem(itemId, dto);
   }
 
   // ─── Delete ──────────────────────────────────────────────────────────────────

@@ -245,31 +245,68 @@ export class SeoService {
     return { success: true, data: enriched };
   }
 
-  // ─── Update by Item ───────────────────────────────────────────────────────────
+  // ─── Upsert by Item ──────────────────────────────────────────────────────────
 
-  async updateByItem(
-    seoId: string,
+  async upsertByItem(
     itemId: string,
-    moduleId: string,
-    dto: UpdateSeoDto,
+    dto: CreateSeoDto,
   ): Promise<{ success: boolean; message: string; data: object }> {
-    // Verify the seo_id matches the record linked to item_id + module_id
+    const SEO_FIELDS = 'id, title, description, keywords, canonical_url, sitemap_priority, sitemap_frequency, module_id, item_id, disable_for_bots, publish_status, created_at, updated_at';
+
     const { data: existing } = await this.supabase.db
       .from('seo')
-      .select('id, module_id, item_id')
-      .eq('id', seoId)
+      .select('id')
       .eq('item_id', itemId)
-      .eq('module_id', moduleId)
       .is('deleted_at', null)
-      .single();
+      .maybeSingle();
 
-    if (!existing) {
-      throw new NotFoundException(
-        'SEO record not found or the provided seo_id does not belong to this item and module.',
-      );
+    if (existing) {
+      const { data: updated, error } = await this.supabase.db
+        .from('seo')
+        .update({
+          title:             dto.title,
+          description:       dto.description,
+          keywords:          dto.keywords ?? null,
+          canonical_url:     dto.canonical_url ?? null,
+          sitemap_priority:  dto.sitemap_priority ?? 0.5,
+          sitemap_frequency: dto.sitemap_frequency,
+          module_id:         dto.module_id,
+          disable_for_bots:  dto.disable_for_bots ?? false,
+          publish_status:    dto.publish_status,
+          updated_at:        new Date().toISOString(),
+        })
+        .eq('id', existing.id)
+        .select(SEO_FIELDS)
+        .single();
+
+      if (error) throw new Error(error.message);
+      const [enriched] = await this.enrichWithRelations([updated]);
+      return { success: true, message: 'SEO record updated successfully.', data: enriched };
     }
 
-    return this.update(seoId, dto);
+    await this.validateModule(dto.module_id);
+    await this.validateItem(dto.module_id, itemId);
+
+    const { data, error } = await this.supabase.db
+      .from('seo')
+      .insert({
+        title:             dto.title,
+        description:       dto.description,
+        keywords:          dto.keywords ?? null,
+        canonical_url:     dto.canonical_url ?? null,
+        sitemap_priority:  dto.sitemap_priority ?? 0.5,
+        sitemap_frequency: dto.sitemap_frequency,
+        module_id:         dto.module_id,
+        item_id:           itemId,
+        disable_for_bots:  dto.disable_for_bots ?? false,
+        publish_status:    dto.publish_status,
+      })
+      .select(SEO_FIELDS)
+      .single();
+
+    if (error) throw new Error(error.message);
+    const [enriched] = await this.enrichWithRelations([data]);
+    return { success: true, message: 'SEO record created successfully.', data: enriched };
   }
 
   // ─── Update ──────────────────────────────────────────────────────────────────
