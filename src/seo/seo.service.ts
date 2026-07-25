@@ -7,6 +7,7 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { CreateSeoDto } from './dto/create-seo.dto';
 import { ListSeoDto } from './dto/list-seo.dto';
 import { UpdateSeoDto } from './dto/update-seo.dto';
+import { UpsertSeoDto } from './dto/upsert-seo.dto';
 
 // Maps module alias → { table, labelField }
 // Add new modules here as the project grows
@@ -249,7 +250,7 @@ export class SeoService {
 
   async upsertByItem(
     itemId: string,
-    dto: CreateSeoDto,
+    dto: UpsertSeoDto,
   ): Promise<{ success: boolean; message: string; data: object }> {
     const SEO_FIELDS = 'id, title, description, keywords, canonical_url, sitemap_priority, sitemap_frequency, module_id, item_id, disable_for_bots, publish_status, created_at, updated_at';
 

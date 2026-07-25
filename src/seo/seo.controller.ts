@@ -28,6 +28,7 @@ import { SITEMAP_FREQUENCIES } from './dto/create-seo.dto';
 import { CreateSeoDto } from './dto/create-seo.dto';
 import { ListSeoDto } from './dto/list-seo.dto';
 import { UpdateSeoDto } from './dto/update-seo.dto';
+import { UpsertSeoDto } from './dto/upsert-seo.dto';
 import { SeoService } from './seo.service';
 
 @ApiTags('SEO')
@@ -190,7 +191,7 @@ export class SeoController {
   @ApiResponse({ status: 404, description: 'Module or item not found' })
   upsertByItem(
     @Param('item_id') itemId: string,
-    @Body() dto: CreateSeoDto,
+    @Body() dto: UpsertSeoDto,
   ) {
     return this.seoService.upsertByItem(itemId, dto);
   }
