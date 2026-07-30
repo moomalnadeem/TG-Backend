@@ -40,6 +40,7 @@ const CREATE_TABLE_SQL = `
 const MIGRATE_SQL = `
   ALTER TABLE roles ADD COLUMN IF NOT EXISTS module_id UUID;
   CREATE INDEX IF NOT EXISTS idx_roles_module_id ON roles(module_id);
+  SELECT pg_notify('pgrst', 'reload schema');
 `;
 
 @Injectable()
