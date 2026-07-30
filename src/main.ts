@@ -5,11 +5,12 @@ import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 const API_MODULES = [
-  { name: 'Authentication', tag: 'Authentication',  path: 'auth',    color: '#4f46e5', icon: '🔐' },
-  { name: 'Roles',          tag: 'Admin — Roles',   path: 'roles',   color: '#0891b2', icon: '🎭' },
-  { name: 'Modules',        tag: 'Modules',         path: 'modules', color: '#059669', icon: '📦' },
-  { name: 'Users',          tag: 'Users',           path: 'users',   color: '#dc2626', icon: '👥' },
-  { name: 'SEO',            tag: 'SEO',             path: 'seo',     color: '#d97706', icon: '🔍' },
+  { name: 'Authentication', tag: 'Authentication',  path: 'auth',      color: '#4f46e5', icon: '🔐' },
+  { name: 'Roles',          tag: 'Admin — Roles',   path: 'roles',     color: '#0891b2', icon: '🎭' },
+  { name: 'Modules',        tag: 'Modules',         path: 'modules',   color: '#059669', icon: '📦' },
+  { name: 'Users',          tag: 'Users',           path: 'users',     color: '#dc2626', icon: '👥' },
+  { name: 'SEO',            tag: 'SEO',             path: 'seo',       color: '#d97706', icon: '🔍' },
+  { name: 'Languages',      tag: 'Languages',       path: 'languages', color: '#7c3aed', icon: '🌐' },
 ];
 
 function filterDocByTag(document: OpenAPIObject, tag: string): OpenAPIObject {
