@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   Matches,
 } from 'class-validator';
 
@@ -23,6 +24,11 @@ export class CreateRoleDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @ApiPropertyOptional({ example: 'uuid-of-module', description: 'Module this role belongs to' })
+  @IsOptional()
+  @IsUUID('all', { message: 'module_id must be a valid UUID.' })
+  module_id?: string;
 
   @ApiPropertyOptional({ example: true, default: true })
   @IsOptional()

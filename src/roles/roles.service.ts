@@ -26,13 +26,16 @@ const CREATE_TABLE_SQL = `
     name        VARCHAR     NOT NULL UNIQUE,
     slug        VARCHAR     NOT NULL UNIQUE,
     description TEXT,
+    module_id   UUID,
     status      BOOLEAN     NOT NULL DEFAULT true,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at  TIMESTAMPTZ
   );
-  CREATE INDEX IF NOT EXISTS idx_roles_slug   ON roles(slug);
-  CREATE INDEX IF NOT EXISTS idx_roles_status ON roles(status);
+  ALTER TABLE roles ADD COLUMN IF NOT EXISTS module_id UUID;
+  CREATE INDEX IF NOT EXISTS idx_roles_slug      ON roles(slug);
+  CREATE INDEX IF NOT EXISTS idx_roles_status    ON roles(status);
+  CREATE INDEX IF NOT EXISTS idx_roles_module_id ON roles(module_id);
 `;
 
 @Injectable()
@@ -148,11 +151,14 @@ export class RolesService {
       throw new ConflictException('Role already exists.');
     }
 
+    if (dto.module_id) await this.validateModule(dto.module_id);
+
     const { error } = await this.supabase.db.from('roles').insert({
-      name: dto.name,
-      slug: dto.slug,
+      name:        dto.name,
+      slug:        dto.slug,
       description: dto.description ?? null,
-      status: dto.status ?? true,
+      module_id:   dto.module_id ?? null,
+      status:      dto.status ?? true,
     });
 
     if (error) throw new Error(error.message);
@@ -168,6 +174,7 @@ export class RolesService {
       limit = 10,
       search,
       status,
+      module_id,
       sortBy = 'created_at',
       order = 'DESC',
     } = query;
@@ -177,16 +184,12 @@ export class RolesService {
 
     let dbQuery = this.supabase.db
       .from('roles')
-      .select('id, name, slug, description, status, created_at', { count: 'exact' })
+      .select('id, name, slug, description, module_id, status, created_at', { count: 'exact' })
       .is('deleted_at', null);
 
-    if (search) {
-      dbQuery = dbQuery.or(`name.ilike.%${search}%,slug.ilike.%${search}%`);
-    }
-
-    if (status !== undefined) {
-      dbQuery = dbQuery.eq('status', status);
-    }
+    if (search)    dbQuery = dbQuery.or(`name.ilike.%${search}%,slug.ilike.%${search}%`);
+    if (status !== undefined) dbQuery = dbQuery.eq('status', status);
+    if (module_id) dbQuery = dbQuery.eq('module_id', module_id);
 
     const { data, error, count } = await dbQuery
       .order(sortBy, { ascending: order === 'ASC' })
@@ -206,7 +209,7 @@ export class RolesService {
   async findOne(id: string) {
     const { data, error } = await this.supabase.db
       .from('roles')
-      .select('id, name, slug, description, status, created_at, updated_at')
+      .select('id, name, slug, description, module_id, status, created_at, updated_at')
       .eq('id', id)
       .is('deleted_at', null)
       .single();
@@ -227,6 +230,8 @@ export class RolesService {
       .single();
 
     if (!role) throw new NotFoundException('Role not found');
+
+    if (dto.module_id) await this.validateModule(dto.module_id);
 
     // Check uniqueness conflict only if name/slug is being changed
     if (dto.name || dto.slug) {
@@ -285,5 +290,17 @@ export class RolesService {
     if (error) throw new Error(error.message);
 
     return { success: true, message: 'Role deleted successfully' };
+  }
+
+  // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+  private async validateModule(moduleId: string) {
+    const { data } = await this.supabase.db
+      .from('modules')
+      .select('id')
+      .eq('id', moduleId)
+      .is('deleted_at', null)
+      .single();
+    if (!data) throw new NotFoundException('Module not found.');
   }
 }

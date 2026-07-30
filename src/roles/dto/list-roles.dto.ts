@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 
 export class ListRolesDto {
   @ApiPropertyOptional({ example: 1, default: 1 })
@@ -31,6 +31,11 @@ export class ListRolesDto {
   })
   @IsBoolean()
   status?: boolean;
+
+  @ApiPropertyOptional({ example: 'uuid-of-module', description: 'Filter by module UUID' })
+  @IsOptional()
+  @IsUUID('all', { message: 'module_id must be a valid UUID.' })
+  module_id?: string;
 
   @ApiPropertyOptional({ example: 'name', enum: ['name', 'slug', 'status', 'created_at'], default: 'created_at' })
   @IsOptional()
