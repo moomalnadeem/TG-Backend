@@ -32,9 +32,13 @@ const CREATE_TABLE_SQL = `
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at  TIMESTAMPTZ
   );
-  ALTER TABLE roles ADD COLUMN IF NOT EXISTS module_id UUID;
   CREATE INDEX IF NOT EXISTS idx_roles_slug      ON roles(slug);
   CREATE INDEX IF NOT EXISTS idx_roles_status    ON roles(status);
+  CREATE INDEX IF NOT EXISTS idx_roles_module_id ON roles(module_id);
+`;
+
+const MIGRATE_SQL = `
+  ALTER TABLE roles ADD COLUMN IF NOT EXISTS module_id UUID;
   CREATE INDEX IF NOT EXISTS idx_roles_module_id ON roles(module_id);
 `;
 
@@ -50,6 +54,7 @@ export class RolesService {
     data: { tableCreated: boolean; rolesSeeded: number; skippedRoles: number };
   }> {
     const tableCreated = await this.ensureTableExists();
+    await this.runMigrations();
     const { rolesSeeded, skippedRoles } = await this.seedDefaultRoles();
 
     const alreadyInitialized = !tableCreated && rolesSeeded === 0;
@@ -61,6 +66,24 @@ export class RolesService {
         : 'Role module initialized successfully.',
       data: { tableCreated, rolesSeeded, skippedRoles },
     };
+  }
+
+  private async runMigrations(): Promise<void> {
+    const res = await fetch(
+      `https://api.supabase.com/v1/projects/${process.env.SUPABASE_PROJECT_REF}/database/query`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: MIGRATE_SQL }),
+      },
+    );
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Roles migration failed: ${body}`);
+    }
   }
 
   private async ensureTableExists(): Promise<boolean> {
