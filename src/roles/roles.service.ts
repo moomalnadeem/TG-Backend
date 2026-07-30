@@ -221,9 +221,11 @@ export class RolesService {
 
     if (error) throw new Error(error.message);
 
+    const enriched = await this.enrichWithModule(data ?? []);
+
     return {
       success: true,
-      data,
+      data: enriched,
       pagination: { page, limit, total: count ?? 0 },
     };
   }
@@ -240,7 +242,8 @@ export class RolesService {
 
     if (error || !data) throw new NotFoundException('Role not found');
 
-    return { success: true, data };
+    const [enriched] = await this.enrichWithModule([data]);
+    return { success: true, data: enriched };
   }
 
   // ─── Update ──────────────────────────────────────────────────────────────────
@@ -317,6 +320,27 @@ export class RolesService {
   }
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+  private async enrichWithModule(records: any[]) {
+    if (!records.length) return records;
+
+    const moduleIds = [...new Set(records.filter(r => r.module_id).map(r => r.module_id))];
+    if (!moduleIds.length) return records.map(r => ({ ...r, module: null }));
+
+    const { data: modules } = await this.supabase.db
+      .from('modules')
+      .select('id, module_name')
+      .in('id', moduleIds);
+
+    const moduleMap = Object.fromEntries(
+      (modules ?? []).map(m => [m.id, { id: m.id, name: m.module_name }]),
+    );
+
+    return records.map(r => ({
+      ...r,
+      module: r.module_id ? (moduleMap[r.module_id] ?? null) : null,
+    }));
+  }
 
   private async validateModule(moduleId: string) {
     const { data } = await this.supabase.db
