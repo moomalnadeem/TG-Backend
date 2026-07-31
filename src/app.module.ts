@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { CountriesModule } from './countries/countries.module';
 import { LanguagesModule } from './languages/languages.module';
 import { AppModulesModule } from './modules/modules.module';
 import { OrganizationsModule } from './organizations/organizations.module';
@@ -22,6 +23,7 @@ import { UsersModule } from './users/users.module';
     SeoModule,
     LanguagesModule,
     OrganizationsModule,
+    CountriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

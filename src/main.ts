@@ -12,6 +12,7 @@ const API_MODULES = [
   { name: 'SEO',            tag: 'SEO',             path: 'seo',       color: '#d97706', icon: '🔍' },
   { name: 'Languages',      tag: 'Languages',       path: 'languages',     color: '#7c3aed', icon: '🌐' },
   { name: 'Organizations', tag: 'Organizations',   path: 'organizations', color: '#0f766e', icon: '🏢' },
+  { name: 'Countries',     tag: 'Countries',       path: 'countries',     color: '#b45309', icon: '🌍' },
 ];
 
 function filterDocByTag(document: OpenAPIObject, tag: string): OpenAPIObject {
