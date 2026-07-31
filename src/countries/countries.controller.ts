@@ -31,6 +31,15 @@ import { CreateCountryDto } from './dto/create-country.dto';
 import { ListCountriesDto } from './dto/list-countries.dto';
 import { UpdateCountryDto } from './dto/update-country.dto';
 
+function groupFiles(files: any): Record<string, Express.Multer.File[]> {
+  if (!Array.isArray(files)) return files ?? {};
+  return (files as Express.Multer.File[]).reduce((acc, f) => {
+    if (!acc[f.fieldname]) acc[f.fieldname] = [];
+    acc[f.fieldname].push(f);
+    return acc;
+  }, {} as Record<string, Express.Multer.File[]>);
+}
+
 @ApiTags('Countries')
 @ApiBearerAuth('bearer')
 @UseGuards(BearerAuthGuard)
@@ -104,7 +113,7 @@ export class CountriesController {
   @ApiResponse({ status: 400, description: 'Validation error' })
   @ApiResponse({ status: 404, description: 'Module or language not found' })
   create(@Body() dto: CreateCountryDto, @UploadedFiles() files: any) {
-    return this.countriesService.create(dto, files ?? {});
+    return this.countriesService.create(dto, groupFiles(files));
   }
 
   // ─── List ────────────────────────────────────────────────────────────────────
@@ -175,7 +184,7 @@ export class CountriesController {
   @ApiResponse({ status: 200, description: 'Country updated successfully' })
   @ApiResponse({ status: 404, description: 'Country not found' })
   update(@Param('id') id: string, @Body() dto: UpdateCountryDto, @UploadedFiles() files: any) {
-    return this.countriesService.update(id, dto, files ?? {});
+    return this.countriesService.update(id, dto, groupFiles(files));
   }
 
   // ─── Delete ──────────────────────────────────────────────────────────────────
@@ -208,9 +217,8 @@ export class CountriesController {
   @ApiResponse({ status: 201, description: 'Gallery images added — returns updated images array' })
   @ApiResponse({ status: 404, description: 'Country not found' })
   addGallery(@Param('id') id: string, @UploadedFiles() files: any) {
-    const imageFiles: Express.Multer.File[] = Array.isArray(files)
-      ? files
-      : (files?.images ?? []);
+    const grouped = groupFiles(files);
+    const imageFiles: Express.Multer.File[] = grouped?.images ?? [];
     return this.countriesService.addGalleryImages(id, imageFiles);
   }
 

@@ -31,6 +31,15 @@ import { ListOrganizationsDto } from './dto/list-organizations.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { OrganizationsService } from './organizations.service';
 
+function groupFiles(files: any): Record<string, Express.Multer.File[]> {
+  if (!Array.isArray(files)) return files ?? {};
+  return (files as Express.Multer.File[]).reduce((acc, f) => {
+    if (!acc[f.fieldname]) acc[f.fieldname] = [];
+    acc[f.fieldname].push(f);
+    return acc;
+  }, {} as Record<string, Express.Multer.File[]>);
+}
+
 @ApiTags('Organizations')
 @ApiBearerAuth('bearer')
 @UseGuards(BearerAuthGuard)
@@ -93,7 +102,7 @@ export class OrganizationsController {
   @ApiResponse({ status: 404, description: 'Module, country, city, or language not found' })
   @ApiResponse({ status: 409, description: 'Slug or email already exists' })
   create(@Body() dto: CreateOrganizationDto, @UploadedFiles() files: any) {
-    return this.organizationsService.create(dto, files ?? {});
+    return this.organizationsService.create(dto, groupFiles(files));
   }
 
   // ─── List ────────────────────────────────────────────────────────────────────
@@ -165,7 +174,7 @@ export class OrganizationsController {
   @ApiResponse({ status: 404, description: 'Organization not found' })
   @ApiResponse({ status: 409, description: 'Slug or email already exists' })
   update(@Param('id') id: string, @Body() dto: UpdateOrganizationDto, @UploadedFiles() files: any) {
-    return this.organizationsService.update(id, dto, files ?? {});
+    return this.organizationsService.update(id, dto, groupFiles(files));
   }
 
   // ─── Delete ──────────────────────────────────────────────────────────────────
@@ -198,9 +207,8 @@ export class OrganizationsController {
   @ApiResponse({ status: 201, description: 'Gallery images added — returns updated gallery array' })
   @ApiResponse({ status: 404, description: 'Organization not found' })
   addGallery(@Param('id') id: string, @UploadedFiles() files: any) {
-    const galleryFiles: Express.Multer.File[] = Array.isArray(files)
-      ? files
-      : (files?.gallery ?? []);
+    const grouped = groupFiles(files);
+    const galleryFiles: Express.Multer.File[] = grouped?.gallery ?? [];
     return this.organizationsService.addGalleryImages(id, galleryFiles);
   }
 
