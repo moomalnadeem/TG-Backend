@@ -13,6 +13,114 @@ const DEFAULT_LANGUAGES = [
   { name: 'Arabic',  code: 'ar', native_name: 'العربية', locale: 'ar-AE', direction: 'RTL', is_default: false, status: true },
 ];
 
+const SEED_LANGUAGES = [
+  { name: 'Afrikaans',           code: 'af',  native_name: 'Afrikaans',            locale: 'af-ZA',  direction: 'LTR' },
+  { name: 'Albanian',            code: 'sq',  native_name: 'Shqip',                locale: 'sq-AL',  direction: 'LTR' },
+  { name: 'Amharic',             code: 'am',  native_name: 'አማርኛ',                 locale: 'am-ET',  direction: 'LTR' },
+  { name: 'Armenian',            code: 'hy',  native_name: 'Հայերեն',              locale: 'hy-AM',  direction: 'LTR' },
+  { name: 'Azerbaijani',         code: 'az',  native_name: 'Azərbaycan dili',      locale: 'az-AZ',  direction: 'LTR' },
+  { name: 'Basque',              code: 'eu',  native_name: 'Euskara',              locale: 'eu-ES',  direction: 'LTR' },
+  { name: 'Belarusian',          code: 'be',  native_name: 'Беларуская',           locale: 'be-BY',  direction: 'LTR' },
+  { name: 'Bengali',             code: 'bn',  native_name: 'বাংলা',               locale: 'bn-BD',  direction: 'LTR' },
+  { name: 'Bislama',             code: 'bi',  native_name: 'Bislama',              locale: 'bi-VU',  direction: 'LTR' },
+  { name: 'Bosnian',             code: 'bs',  native_name: 'Bosanski',             locale: 'bs-BA',  direction: 'LTR' },
+  { name: 'Bulgarian',           code: 'bg',  native_name: 'Български',            locale: 'bg-BG',  direction: 'LTR' },
+  { name: 'Burmese',             code: 'my',  native_name: 'မြန်မာဘာသာ',          locale: 'my-MM',  direction: 'LTR' },
+  { name: 'Catalan',             code: 'ca',  native_name: 'Català',               locale: 'ca-ES',  direction: 'LTR' },
+  { name: 'Chinese (Simplified)',  code: 'zh',  native_name: '中文(简体)',           locale: 'zh-CN',  direction: 'LTR' },
+  { name: 'Chinese (Traditional)', code: 'zh-TW', native_name: '中文(繁體)',       locale: 'zh-TW',  direction: 'LTR' },
+  { name: 'Croatian',            code: 'hr',  native_name: 'Hrvatski',             locale: 'hr-HR',  direction: 'LTR' },
+  { name: 'Czech',               code: 'cs',  native_name: 'Čeština',             locale: 'cs-CZ',  direction: 'LTR' },
+  { name: 'Danish',              code: 'da',  native_name: 'Dansk',                locale: 'da-DK',  direction: 'LTR' },
+  { name: 'Dari',                code: 'prs', native_name: 'دری',                  locale: 'prs-AF', direction: 'RTL' },
+  { name: 'Dhivehi',             code: 'dv',  native_name: 'ދިވެހި',              locale: 'dv-MV',  direction: 'RTL' },
+  { name: 'Dutch',               code: 'nl',  native_name: 'Nederlands',           locale: 'nl-NL',  direction: 'LTR' },
+  { name: 'Dzongkha',            code: 'dz',  native_name: 'རྫོང་ཁ',              locale: 'dz-BT',  direction: 'LTR' },
+  { name: 'Estonian',            code: 'et',  native_name: 'Eesti',                locale: 'et-EE',  direction: 'LTR' },
+  { name: 'Ewe',                 code: 'ee',  native_name: 'Eʋegbe',               locale: 'ee-GH',  direction: 'LTR' },
+  { name: 'Fijian',              code: 'fj',  native_name: 'Vosa Vakaviti',        locale: 'fj-FJ',  direction: 'LTR' },
+  { name: 'Filipino',            code: 'tl',  native_name: 'Filipino',             locale: 'tl-PH',  direction: 'LTR' },
+  { name: 'Finnish',             code: 'fi',  native_name: 'Suomi',                locale: 'fi-FI',  direction: 'LTR' },
+  { name: 'French',              code: 'fr',  native_name: 'Français',             locale: 'fr-FR',  direction: 'LTR' },
+  { name: 'Galician',            code: 'gl',  native_name: 'Galego',               locale: 'gl-ES',  direction: 'LTR' },
+  { name: 'Georgian',            code: 'ka',  native_name: 'ქართული',             locale: 'ka-GE',  direction: 'LTR' },
+  { name: 'German',              code: 'de',  native_name: 'Deutsch',              locale: 'de-DE',  direction: 'LTR' },
+  { name: 'Greek',               code: 'el',  native_name: 'Ελληνικά',            locale: 'el-GR',  direction: 'LTR' },
+  { name: 'Guaraní',             code: 'gn',  native_name: "Avañe'ẽ",             locale: 'gn-PY',  direction: 'LTR' },
+  { name: 'Gujarati',            code: 'gu',  native_name: 'ગુજરાતી',             locale: 'gu-IN',  direction: 'LTR' },
+  { name: 'Haitian Creole',      code: 'ht',  native_name: 'Kreyòl ayisyen',       locale: 'ht-HT',  direction: 'LTR' },
+  { name: 'Hausa',               code: 'ha',  native_name: 'Hausa',                locale: 'ha-NG',  direction: 'LTR' },
+  { name: 'Hebrew',              code: 'he',  native_name: 'עברית',               locale: 'he-IL',  direction: 'RTL' },
+  { name: 'Hindi',               code: 'hi',  native_name: 'हिन्दी',              locale: 'hi-IN',  direction: 'LTR' },
+  { name: 'Hungarian',           code: 'hu',  native_name: 'Magyar',               locale: 'hu-HU',  direction: 'LTR' },
+  { name: 'Icelandic',           code: 'is',  native_name: 'Íslenska',            locale: 'is-IS',  direction: 'LTR' },
+  { name: 'Igbo',                code: 'ig',  native_name: 'Igbo',                 locale: 'ig-NG',  direction: 'LTR' },
+  { name: 'Indonesian',          code: 'id',  native_name: 'Bahasa Indonesia',     locale: 'id-ID',  direction: 'LTR' },
+  { name: 'Irish',               code: 'ga',  native_name: 'Gaeilge',             locale: 'ga-IE',  direction: 'LTR' },
+  { name: 'Italian',             code: 'it',  native_name: 'Italiano',             locale: 'it-IT',  direction: 'LTR' },
+  { name: 'Japanese',            code: 'ja',  native_name: '日本語',               locale: 'ja-JP',  direction: 'LTR' },
+  { name: 'Kannada',             code: 'kn',  native_name: 'ಕನ್ನಡ',               locale: 'kn-IN',  direction: 'LTR' },
+  { name: 'Kazakh',              code: 'kk',  native_name: 'Қазақ тілі',          locale: 'kk-KZ',  direction: 'LTR' },
+  { name: 'Khmer',               code: 'km',  native_name: 'ភាសាខ្មែរ',           locale: 'km-KH',  direction: 'LTR' },
+  { name: 'Kinyarwanda',         code: 'rw',  native_name: 'Ikinyarwanda',         locale: 'rw-RW',  direction: 'LTR' },
+  { name: 'Kirundi',             code: 'rn',  native_name: 'Ikirundi',             locale: 'rn-BI',  direction: 'LTR' },
+  { name: 'Korean',              code: 'ko',  native_name: '한국어',               locale: 'ko-KR',  direction: 'LTR' },
+  { name: 'Kurdish',             code: 'ku',  native_name: 'Kurdî',               locale: 'ku-IQ',  direction: 'LTR' },
+  { name: 'Kyrgyz',              code: 'ky',  native_name: 'Кыргыз тили',         locale: 'ky-KG',  direction: 'LTR' },
+  { name: 'Lao',                 code: 'lo',  native_name: 'ພາສາລາວ',             locale: 'lo-LA',  direction: 'LTR' },
+  { name: 'Latin',               code: 'la',  native_name: 'Latina',               locale: 'la-VA',  direction: 'LTR' },
+  { name: 'Latvian',             code: 'lv',  native_name: 'Latviešu',            locale: 'lv-LV',  direction: 'LTR' },
+  { name: 'Lingala',             code: 'ln',  native_name: 'Lingála',             locale: 'ln-CD',  direction: 'LTR' },
+  { name: 'Lithuanian',          code: 'lt',  native_name: 'Lietuvių',            locale: 'lt-LT',  direction: 'LTR' },
+  { name: 'Luxembourgish',       code: 'lb',  native_name: 'Lëtzebuergesch',      locale: 'lb-LU',  direction: 'LTR' },
+  { name: 'Macedonian',          code: 'mk',  native_name: 'Македонски',           locale: 'mk-MK',  direction: 'LTR' },
+  { name: 'Malagasy',            code: 'mg',  native_name: 'Malagasy',             locale: 'mg-MG',  direction: 'LTR' },
+  { name: 'Malay',               code: 'ms',  native_name: 'Bahasa Melayu',        locale: 'ms-MY',  direction: 'LTR' },
+  { name: 'Malayalam',           code: 'ml',  native_name: 'മലയാളം',              locale: 'ml-IN',  direction: 'LTR' },
+  { name: 'Maltese',             code: 'mt',  native_name: 'Malti',                locale: 'mt-MT',  direction: 'LTR' },
+  { name: 'Marathi',             code: 'mr',  native_name: 'मराठी',               locale: 'mr-IN',  direction: 'LTR' },
+  { name: 'Marshallese',         code: 'mh',  native_name: 'Kajin M̧ajeļ',        locale: 'mh-MH',  direction: 'LTR' },
+  { name: 'Mongolian',           code: 'mn',  native_name: 'Монгол хэл',          locale: 'mn-MN',  direction: 'LTR' },
+  { name: 'Nauruan',             code: 'na',  native_name: 'Dorerin Naoero',       locale: 'na-NR',  direction: 'LTR' },
+  { name: 'Nepali',              code: 'ne',  native_name: 'नेपाली',              locale: 'ne-NP',  direction: 'LTR' },
+  { name: 'Norwegian',           code: 'no',  native_name: 'Norsk',                locale: 'no-NO',  direction: 'LTR' },
+  { name: 'Pashto',              code: 'ps',  native_name: 'پښتو',                locale: 'ps-AF',  direction: 'RTL' },
+  { name: 'Persian',             code: 'fa',  native_name: 'فارسی',               locale: 'fa-IR',  direction: 'RTL' },
+  { name: 'Polish',              code: 'pl',  native_name: 'Polski',               locale: 'pl-PL',  direction: 'LTR' },
+  { name: 'Portuguese',          code: 'pt',  native_name: 'Português',            locale: 'pt-BR',  direction: 'LTR' },
+  { name: 'Punjabi',             code: 'pa',  native_name: 'ਪੰਜਾਬੀ',              locale: 'pa-IN',  direction: 'LTR' },
+  { name: 'Romanian',            code: 'ro',  native_name: 'Română',              locale: 'ro-RO',  direction: 'LTR' },
+  { name: 'Russian',             code: 'ru',  native_name: 'Русский',              locale: 'ru-RU',  direction: 'LTR' },
+  { name: 'Samoan',              code: 'sm',  native_name: "Gagana fa'a Sāmoa",   locale: 'sm-WS',  direction: 'LTR' },
+  { name: 'Serbian',             code: 'sr',  native_name: 'Српски',              locale: 'sr-RS',  direction: 'LTR' },
+  { name: 'Shona',               code: 'sn',  native_name: 'ChiShona',             locale: 'sn-ZW',  direction: 'LTR' },
+  { name: 'Sinhala',             code: 'si',  native_name: 'සිංහල',               locale: 'si-LK',  direction: 'LTR' },
+  { name: 'Slovak',              code: 'sk',  native_name: 'Slovenčina',          locale: 'sk-SK',  direction: 'LTR' },
+  { name: 'Slovenian',           code: 'sl',  native_name: 'Slovenščina',         locale: 'sl-SI',  direction: 'LTR' },
+  { name: 'Somali',              code: 'so',  native_name: 'Soomaali',             locale: 'so-SO',  direction: 'LTR' },
+  { name: 'Spanish',             code: 'es',  native_name: 'Español',             locale: 'es-ES',  direction: 'LTR' },
+  { name: 'Swahili',             code: 'sw',  native_name: 'Kiswahili',            locale: 'sw-KE',  direction: 'LTR' },
+  { name: 'Swedish',             code: 'sv',  native_name: 'Svenska',              locale: 'sv-SE',  direction: 'LTR' },
+  { name: 'Tajik',               code: 'tg',  native_name: 'Тоҷикӣ',             locale: 'tg-TJ',  direction: 'LTR' },
+  { name: 'Tamil',               code: 'ta',  native_name: 'தமிழ்',               locale: 'ta-IN',  direction: 'LTR' },
+  { name: 'Telugu',              code: 'te',  native_name: 'తెలుగు',              locale: 'te-IN',  direction: 'LTR' },
+  { name: 'Tetum',               code: 'tet', native_name: 'Tetum',                locale: 'tet-TL', direction: 'LTR' },
+  { name: 'Thai',                code: 'th',  native_name: 'ภาษาไทย',             locale: 'th-TH',  direction: 'LTR' },
+  { name: 'Tigrinya',            code: 'ti',  native_name: 'ትግርኛ',                locale: 'ti-ER',  direction: 'LTR' },
+  { name: 'Tok Pisin',           code: 'tpi', native_name: 'Tok Pisin',            locale: 'tpi-PG', direction: 'LTR' },
+  { name: 'Tongan',              code: 'to',  native_name: 'Lea fakatonga',        locale: 'to-TO',  direction: 'LTR' },
+  { name: 'Turkish',             code: 'tr',  native_name: 'Türkçe',             locale: 'tr-TR',  direction: 'LTR' },
+  { name: 'Turkmen',             code: 'tk',  native_name: 'Türkmençe',           locale: 'tk-TM',  direction: 'LTR' },
+  { name: 'Ukrainian',           code: 'uk',  native_name: 'Українська',          locale: 'uk-UA',  direction: 'LTR' },
+  { name: 'Urdu',                code: 'ur',  native_name: 'اردو',                locale: 'ur-PK',  direction: 'RTL' },
+  { name: 'Uzbek',               code: 'uz',  native_name: "O'zbek tili",         locale: 'uz-UZ',  direction: 'LTR' },
+  { name: 'Vietnamese',          code: 'vi',  native_name: 'Tiếng Việt',         locale: 'vi-VN',  direction: 'LTR' },
+  { name: 'Welsh',               code: 'cy',  native_name: 'Cymraeg',              locale: 'cy-GB',  direction: 'LTR' },
+  { name: 'Xhosa',               code: 'xh',  native_name: 'isiXhosa',             locale: 'xh-ZA',  direction: 'LTR' },
+  { name: 'Yoruba',              code: 'yo',  native_name: 'Yorùbá',              locale: 'yo-NG',  direction: 'LTR' },
+  { name: 'Zulu',                code: 'zu',  native_name: 'isiZulu',              locale: 'zu-ZA',  direction: 'LTR' },
+];
+
 const CREATE_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS languages (
     id          UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -122,6 +230,33 @@ export class LanguagesService {
     }
 
     return { languagesSeeded, skippedLanguages };
+  }
+
+  // ─── Seed ────────────────────────────────────────────────────────────────────
+
+  async seed(): Promise<{ success: boolean; message: string; data: { inserted: number; skipped: number } }> {
+    const { data: existing } = await this.supabase.db
+      .from('languages')
+      .select('code')
+      .is('deleted_at', null);
+
+    const existingCodes = new Set((existing ?? []).map((r: any) => r.code).filter(Boolean));
+    const toInsert = SEED_LANGUAGES.filter(l => !existingCodes.has(l.code));
+
+    if (toInsert.length) {
+      const { error } = await this.supabase.db
+        .from('languages')
+        .insert(toInsert.map(l => ({ ...l, is_default: false, status: true })));
+      if (error) throw new Error(`Seed failed: ${error.message}`);
+    }
+
+    return {
+      success: true,
+      message: toInsert.length
+        ? `Seeded ${toInsert.length} languages successfully.`
+        : 'All languages already exist. Nothing inserted.',
+      data: { inserted: toInsert.length, skipped: existingCodes.size },
+    };
   }
 
   // ─── Create ──────────────────────────────────────────────────────────────────

@@ -56,6 +56,16 @@ export class LanguagesController {
     return this.languagesService.setup();
   }
 
+  // ─── Seed ────────────────────────────────────────────────────────────────────
+
+  @Post('seed')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Seed all world languages — safe to re-run (skips existing codes)' })
+  @ApiResponse({ status: 200, schema: { example: { success: true, message: 'Seeded 100 languages successfully.', data: { inserted: 100, skipped: 2 } } } })
+  seed() {
+    return this.languagesService.seed();
+  }
+
   // ─── Create ──────────────────────────────────────────────────────────────────
 
   @Post()
