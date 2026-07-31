@@ -9,18 +9,24 @@ import {
   MaxLength,
 } from 'class-validator';
 
+const toUuid = ({ value }: { value: any }) =>
+  value === '' || value === null ? undefined : value;
+
 export class CreateCountryDto {
   @ApiPropertyOptional({ example: 'uuid-of-module', description: 'Module UUID' })
+  @Transform(toUuid)
   @IsOptional()
   @IsUUID('all', { message: 'module_id must be a valid UUID.' })
   module_id?: string;
 
   @ApiPropertyOptional({ example: 'uuid-of-language', description: 'Language UUID' })
+  @Transform(toUuid)
   @IsOptional()
   @IsUUID('all', { message: 'language_id must be a valid UUID.' })
   language_id?: string;
 
   @ApiPropertyOptional({ example: 'uuid-of-seo', description: 'SEO record UUID' })
+  @Transform(toUuid)
   @IsOptional()
   @IsUUID('all', { message: 'seo_id must be a valid UUID.' })
   seo_id?: string;
