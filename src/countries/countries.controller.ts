@@ -48,6 +48,16 @@ export class CountriesController {
     return this.countriesService.setup();
   }
 
+  // ─── Seed ────────────────────────────────────────────────────────────────────
+
+  @Post('seed')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Seed all 195 countries with standard data — safe to re-run (skips existing iso2 codes)' })
+  @ApiResponse({ status: 200, schema: { example: { success: true, message: 'Seeded 195 countries successfully.', data: { inserted: 195, skipped: 0 } } } })
+  seed() {
+    return this.countriesService.seed();
+  }
+
   // ─── Dropdown ────────────────────────────────────────────────────────────────
 
   @Get('dropdown')
