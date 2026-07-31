@@ -10,7 +10,8 @@ const API_MODULES = [
   { name: 'Modules',        tag: 'Modules',         path: 'modules',   color: '#059669', icon: '📦' },
   { name: 'Users',          tag: 'Users',           path: 'users',     color: '#dc2626', icon: '👥' },
   { name: 'SEO',            tag: 'SEO',             path: 'seo',       color: '#d97706', icon: '🔍' },
-  { name: 'Languages',      tag: 'Languages',       path: 'languages', color: '#7c3aed', icon: '🌐' },
+  { name: 'Languages',      tag: 'Languages',       path: 'languages',     color: '#7c3aed', icon: '🌐' },
+  { name: 'Organizations', tag: 'Organizations',   path: 'organizations', color: '#0f766e', icon: '🏢' },
 ];
 
 function filterDocByTag(document: OpenAPIObject, tag: string): OpenAPIObject {

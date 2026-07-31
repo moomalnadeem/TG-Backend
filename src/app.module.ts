@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { LanguagesModule } from './languages/languages.module';
 import { AppModulesModule } from './modules/modules.module';
+import { OrganizationsModule } from './organizations/organizations.module';
 import { RolesModule } from './roles/roles.module';
 import { SeoModule } from './seo/seo.module';
 import { SupabaseModule } from './supabase/supabase.module';
@@ -20,6 +21,7 @@ import { UsersModule } from './users/users.module';
     AppModulesModule,
     SeoModule,
     LanguagesModule,
+    OrganizationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
