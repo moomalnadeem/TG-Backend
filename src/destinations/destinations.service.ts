@@ -531,6 +531,18 @@ export class DestinationsService {
     return Promise.all(files.map(f => this.uploadFile(f, folder, allowedTypes)));
   }
 
+  private async fetchCategories(ids: string[]): Promise<{ data: any[] }> {
+    try {
+      const res = await this.supabase.db
+        .from('destination_categories')
+        .select('id, name')
+        .in('id', ids);
+      return { data: res.data ?? [] };
+    } catch {
+      return { data: [] };
+    }
+  }
+
   private async enrichWithRelations(records: any[]) {
     if (!records.length) return records;
 
@@ -547,7 +559,7 @@ export class DestinationsService {
       cityIds.length     ? this.supabase.db.from('cities').select('id, name, slug').in('id', cityIds)                              : { data: [] },
       moduleIds.length   ? this.supabase.db.from('modules').select('id, module_name').in('id', moduleIds)                          : { data: [] },
       languageIds.length ? this.supabase.db.from('languages').select('id, name, code').in('id', languageIds)                       : { data: [] },
-      categoryIds.length ? this.supabase.db.from('destination_categories').select('id, name').in('id', categoryIds).catch(() => ({ data: [] })) : { data: [] },
+      categoryIds.length ? this.fetchCategories(categoryIds) : Promise.resolve({ data: [] }),
     ]);
 
     const countryMap  = Object.fromEntries((countriesRes.data   ?? []).map((c: any) => [c.id, { id: c.id, name: c.name, iso2: c.iso2 }]));
