@@ -15,6 +15,7 @@ const API_MODULES = [
   { name: 'Countries',     tag: 'Countries',       path: 'countries',     color: '#b45309', icon: '🌍' },
   { name: 'Cities',        tag: 'Cities',          path: 'cities',        color: '#6d28d9', icon: '🏙️' },
   { name: 'Destinations',  tag: 'Destinations',    path: 'destinations',  color: '#0369a1', icon: '📍' },
+  { name: 'Collections',  tag: 'Collections',     path: 'collections',   color: '#be185d', icon: '🗂️' },
 ];
 
 function filterDocByTag(document: OpenAPIObject, tag: string): OpenAPIObject {

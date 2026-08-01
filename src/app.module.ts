@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { CitiesModule } from './cities/cities.module';
+import { CollectionsModule } from './collections/collections.module';
 import { DestinationsModule } from './destinations/destinations.module';
 import { CountriesModule } from './countries/countries.module';
 import { LanguagesModule } from './languages/languages.module';
@@ -28,6 +29,7 @@ import { UsersModule } from './users/users.module';
     CountriesModule,
     CitiesModule,
     DestinationsModule,
+    CollectionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
