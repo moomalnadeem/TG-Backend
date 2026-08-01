@@ -3,6 +3,7 @@ import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
   IsEmail,
+  IsInt,
   IsNumber,
   IsOptional,
   IsString,
@@ -165,6 +166,14 @@ export class UpdateDestinationDto {
   @IsString()
   @MaxLength(500)
   website?: string;
+
+  @ApiPropertyOptional({ example: 0, description: 'Sort priority — lower number appears first' })
+  @IsOptional()
+  @Transform(toNumber)
+  @Type(() => Number)
+  @IsInt({ message: 'priority must be an integer.' })
+  @Min(0)
+  priority?: number;
 
   @ApiPropertyOptional({ example: false })
   @IsOptional()

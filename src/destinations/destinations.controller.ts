@@ -105,6 +105,7 @@ export class DestinationsController {
         contact_number:    { type: 'string', example: '+971 4 888 8888' },
         email:             { type: 'string', format: 'email', example: 'info@burjkhalifa.ae' },
         website:           { type: 'string', example: 'https://www.burjkhalifa.ae' },
+        priority:          { type: 'integer', example: 0, description: 'Sort priority — lower number appears first (default 0)' },
         featured:          { type: 'boolean', example: false },
         publish_status:    { type: 'boolean', example: true },
         flag_image:        { type: 'string', format: 'binary', description: 'Flag image (jpg, png, webp, svg)' },
@@ -136,7 +137,7 @@ export class DestinationsController {
   @ApiQuery({ name: 'category_id',    required: false, description: 'Filter by category UUID' })
   @ApiQuery({ name: 'featured',       required: false, example: false })
   @ApiQuery({ name: 'publish_status', required: false, example: true })
-  @ApiQuery({ name: 'sortBy',         required: false, enum: ['name', 'slug', 'ticket_price', 'created_at', 'updated_at'] })
+  @ApiQuery({ name: 'sortBy',         required: false, enum: ['name', 'slug', 'ticket_price', 'priority', 'created_at', 'updated_at'] })
   @ApiQuery({ name: 'sortOrder',      required: false, enum: ['ASC', 'DESC'] })
   @ApiResponse({ status: 200, description: 'Paginated list of destinations with country, city, module, language, category' })
   findAll(@Query() query: ListDestinationsDto) {
@@ -191,6 +192,7 @@ export class DestinationsController {
         contact_number:    { type: 'string' },
         email:             { type: 'string', format: 'email' },
         website:           { type: 'string' },
+        priority:          { type: 'integer', example: 0, description: 'Sort priority — lower number appears first (default 0)' },
         featured:          { type: 'boolean' },
         publish_status:    { type: 'boolean' },
         flag_image:        { type: 'string', format: 'binary' },

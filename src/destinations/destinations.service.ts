@@ -47,6 +47,7 @@ const SETUP_SQL = `
     email             VARCHAR(255),
     website           VARCHAR(500),
     featured          BOOLEAN        NOT NULL DEFAULT false,
+    priority          INTEGER        NOT NULL DEFAULT 0,
     flag_image        VARCHAR(500),
     thumbnail         VARCHAR(500),
     banner            VARCHAR(500),
@@ -78,6 +79,7 @@ const SETUP_SQL = `
   ALTER TABLE destinations ADD COLUMN IF NOT EXISTS email             VARCHAR(255);
   ALTER TABLE destinations ADD COLUMN IF NOT EXISTS website           VARCHAR(500);
   ALTER TABLE destinations ADD COLUMN IF NOT EXISTS featured          BOOLEAN NOT NULL DEFAULT false;
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS priority          INTEGER NOT NULL DEFAULT 0;
   ALTER TABLE destinations ADD COLUMN IF NOT EXISTS flag_image        VARCHAR(500);
   ALTER TABLE destinations ADD COLUMN IF NOT EXISTS thumbnail         VARCHAR(500);
   ALTER TABLE destinations ADD COLUMN IF NOT EXISTS banner            VARCHAR(500);
@@ -93,6 +95,7 @@ const SETUP_SQL = `
   CREATE INDEX        IF NOT EXISTS idx_dest_language_id    ON destinations(language_id);
   CREATE INDEX        IF NOT EXISTS idx_dest_category_id    ON destinations(category_id);
   CREATE INDEX        IF NOT EXISTS idx_dest_featured       ON destinations(featured);
+  CREATE INDEX        IF NOT EXISTS idx_dest_priority       ON destinations(priority);
   CREATE INDEX        IF NOT EXISTS idx_dest_publish_status ON destinations(publish_status);
   CREATE INDEX        IF NOT EXISTS idx_dest_deleted_at     ON destinations(deleted_at);
   SELECT pg_notify('pgrst', 'reload schema');
@@ -101,7 +104,7 @@ const SETUP_SQL = `
 const DEST_LIST_FIELDS = [
   'id', 'country_id', 'city_id', 'module_id', 'language_id', 'category_id',
   'name', 'slug', 'short_name', 'thumbnail', 'flag_image',
-  'ticket_price', 'currency', 'featured', 'publish_status', 'created_at',
+  'ticket_price', 'currency', 'featured', 'priority', 'publish_status', 'created_at',
 ].join(', ');
 
 const DEST_DETAIL_FIELDS = [
@@ -110,7 +113,7 @@ const DEST_DETAIL_FIELDS = [
   'address', 'latitude', 'longitude', 'map_url',
   'opening_time', 'closing_time', 'ticket_price', 'currency', 'duration',
   'contact_number', 'email', 'website',
-  'featured', 'flag_image', 'thumbnail', 'banner', 'images',
+  'featured', 'priority', 'flag_image', 'thumbnail', 'banner', 'images',
   'publish_status', 'created_at', 'updated_at',
 ].join(', ');
 
@@ -214,6 +217,7 @@ export class DestinationsService {
         email:             dto.email             ?? null,
         website:           dto.website           ?? null,
         featured:          dto.featured,
+        priority:          dto.priority  ?? 0,
         flag_image:        flagUrl,
         thumbnail:         thumbnailUrl,
         banner:            bannerUrl,

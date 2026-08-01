@@ -1,7 +1,7 @@
 import { Transform, Type } from 'class-transformer';
 import { IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 
-const SORT_FIELDS = ['name', 'slug', 'ticket_price', 'created_at', 'updated_at'] as const;
+const SORT_FIELDS = ['name', 'slug', 'ticket_price', 'priority', 'created_at', 'updated_at'] as const;
 const SORT_ORDERS = ['ASC', 'DESC'] as const;
 
 export class ListDestinationsDto {
