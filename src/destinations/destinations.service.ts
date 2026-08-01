@@ -29,6 +29,7 @@ const SETUP_SQL = `
     language_id       UUID,
     seo_id            UUID,
     category_id       UUID,
+    collection_id     UUID,
     name              VARCHAR(255)   NOT NULL,
     slug              VARCHAR(255)   NOT NULL,
     short_name        VARCHAR(150),
@@ -41,6 +42,7 @@ const SETUP_SQL = `
     opening_time      VARCHAR(10),
     closing_time      VARCHAR(10),
     ticket_price      NUMERIC(10,2),
+    discounted_price  NUMERIC(10,2),
     currency          VARCHAR(10),
     duration          VARCHAR(100),
     contact_number    VARCHAR(30),
@@ -63,6 +65,7 @@ const SETUP_SQL = `
   ALTER TABLE destinations ADD COLUMN IF NOT EXISTS language_id       UUID;
   ALTER TABLE destinations ADD COLUMN IF NOT EXISTS seo_id            UUID;
   ALTER TABLE destinations ADD COLUMN IF NOT EXISTS category_id       UUID;
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS collection_id     UUID;
   ALTER TABLE destinations ADD COLUMN IF NOT EXISTS short_name        VARCHAR(150);
   ALTER TABLE destinations ADD COLUMN IF NOT EXISTS short_description TEXT;
   ALTER TABLE destinations ADD COLUMN IF NOT EXISTS description       TEXT;
@@ -73,6 +76,7 @@ const SETUP_SQL = `
   ALTER TABLE destinations ADD COLUMN IF NOT EXISTS opening_time      VARCHAR(10);
   ALTER TABLE destinations ADD COLUMN IF NOT EXISTS closing_time      VARCHAR(10);
   ALTER TABLE destinations ADD COLUMN IF NOT EXISTS ticket_price      NUMERIC(10,2);
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS discounted_price  NUMERIC(10,2);
   ALTER TABLE destinations ADD COLUMN IF NOT EXISTS currency          VARCHAR(10);
   ALTER TABLE destinations ADD COLUMN IF NOT EXISTS duration          VARCHAR(100);
   ALTER TABLE destinations ADD COLUMN IF NOT EXISTS contact_number    VARCHAR(30);
@@ -94,6 +98,7 @@ const SETUP_SQL = `
   CREATE INDEX        IF NOT EXISTS idx_dest_module_id      ON destinations(module_id);
   CREATE INDEX        IF NOT EXISTS idx_dest_language_id    ON destinations(language_id);
   CREATE INDEX        IF NOT EXISTS idx_dest_category_id    ON destinations(category_id);
+  CREATE INDEX        IF NOT EXISTS idx_dest_collection_id  ON destinations(collection_id);
   CREATE INDEX        IF NOT EXISTS idx_dest_featured       ON destinations(featured);
   CREATE INDEX        IF NOT EXISTS idx_dest_priority       ON destinations(priority);
   CREATE INDEX        IF NOT EXISTS idx_dest_publish_status ON destinations(publish_status);
@@ -102,16 +107,16 @@ const SETUP_SQL = `
 `;
 
 const DEST_LIST_FIELDS = [
-  'id', 'country_id', 'city_id', 'module_id', 'language_id', 'category_id',
+  'id', 'country_id', 'city_id', 'module_id', 'language_id', 'category_id', 'collection_id',
   'name', 'slug', 'short_name', 'thumbnail', 'flag_image',
-  'ticket_price', 'currency', 'featured', 'priority', 'publish_status', 'created_at',
+  'ticket_price', 'discounted_price', 'currency', 'featured', 'priority', 'publish_status', 'created_at',
 ].join(', ');
 
 const DEST_DETAIL_FIELDS = [
-  'id', 'country_id', 'city_id', 'module_id', 'language_id', 'seo_id', 'category_id',
+  'id', 'country_id', 'city_id', 'module_id', 'language_id', 'seo_id', 'category_id', 'collection_id',
   'name', 'slug', 'short_name', 'short_description', 'description',
   'address', 'latitude', 'longitude', 'map_url',
-  'opening_time', 'closing_time', 'ticket_price', 'currency', 'duration',
+  'opening_time', 'closing_time', 'ticket_price', 'discounted_price', 'currency', 'duration',
   'contact_number', 'email', 'website',
   'featured', 'priority', 'flag_image', 'thumbnail', 'banner', 'images',
   'publish_status', 'created_at', 'updated_at',
@@ -199,6 +204,7 @@ export class DestinationsService {
         language_id:       dto.language_id       ?? null,
         seo_id:            dto.seo_id            ?? null,
         category_id:       dto.category_id       ?? null,
+        collection_id:     dto.collection_id     ?? null,
         name:              dto.name,
         slug,
         short_name:        dto.short_name        ?? null,
@@ -211,6 +217,7 @@ export class DestinationsService {
         opening_time:      dto.opening_time      ?? null,
         closing_time:      dto.closing_time      ?? null,
         ticket_price:      dto.ticket_price      ?? null,
+        discounted_price:  dto.discounted_price  ?? null,
         currency:          dto.currency          ?? null,
         duration:          dto.duration          ?? null,
         contact_number:    dto.contact_number    ?? null,
@@ -238,7 +245,7 @@ export class DestinationsService {
   async findAll(query: ListDestinationsDto) {
     const {
       page = 1, limit = 10, search,
-      country_id, city_id, module_id, language_id, category_id,
+      country_id, city_id, module_id, language_id, category_id, collection_id,
       featured, publish_status,
       sortBy = 'created_at', sortOrder = 'DESC',
     } = query;
@@ -260,6 +267,7 @@ export class DestinationsService {
     if (module_id)                    dbQuery = dbQuery.eq('module_id',      module_id);
     if (language_id)                  dbQuery = dbQuery.eq('language_id',    language_id);
     if (category_id)                  dbQuery = dbQuery.eq('category_id',    category_id);
+    if (collection_id)                dbQuery = dbQuery.eq('collection_id',  collection_id);
     if (featured        !== undefined) dbQuery = dbQuery.eq('featured',       featured);
     if (publish_status  !== undefined) dbQuery = dbQuery.eq('publish_status', publish_status);
 
@@ -552,34 +560,38 @@ export class DestinationsService {
 
     const pick = (arr: any[], key: string) => [...new Set(arr.filter(r => r[key]).map(r => r[key]))];
 
-    const countryIds  = pick(records, 'country_id');
-    const cityIds     = pick(records, 'city_id');
-    const moduleIds   = pick(records, 'module_id');
-    const languageIds = pick(records, 'language_id');
-    const categoryIds = pick(records, 'category_id');
+    const countryIds    = pick(records, 'country_id');
+    const cityIds       = pick(records, 'city_id');
+    const moduleIds     = pick(records, 'module_id');
+    const languageIds   = pick(records, 'language_id');
+    const categoryIds   = pick(records, 'category_id');
+    const collectionIds = pick(records, 'collection_id');
 
-    const [countriesRes, citiesRes, modulesRes, languagesRes, categoriesRes] = await Promise.all([
-      countryIds.length  ? this.supabase.db.from('countries').select('id, name, iso2').in('id', countryIds)                        : { data: [] },
-      cityIds.length     ? this.supabase.db.from('cities').select('id, name, slug').in('id', cityIds)                              : { data: [] },
-      moduleIds.length   ? this.supabase.db.from('modules').select('id, module_name').in('id', moduleIds)                          : { data: [] },
-      languageIds.length ? this.supabase.db.from('languages').select('id, name, code').in('id', languageIds)                       : { data: [] },
-      categoryIds.length ? this.fetchCategories(categoryIds) : Promise.resolve({ data: [] }),
+    const [countriesRes, citiesRes, modulesRes, languagesRes, categoriesRes, collectionsRes] = await Promise.all([
+      countryIds.length    ? this.supabase.db.from('countries').select('id, name, iso2').in('id', countryIds)                        : { data: [] },
+      cityIds.length       ? this.supabase.db.from('cities').select('id, name, slug').in('id', cityIds)                              : { data: [] },
+      moduleIds.length     ? this.supabase.db.from('modules').select('id, module_name').in('id', moduleIds)                          : { data: [] },
+      languageIds.length   ? this.supabase.db.from('languages').select('id, name, code').in('id', languageIds)                       : { data: [] },
+      categoryIds.length   ? this.fetchCategories(categoryIds) : Promise.resolve({ data: [] }),
+      collectionIds.length ? this.supabase.db.from('collections').select('id, name, slug').in('id', collectionIds).is('deleted_at', null) : { data: [] },
     ]);
 
-    const countryMap  = Object.fromEntries((countriesRes.data   ?? []).map((c: any) => [c.id, { id: c.id, name: c.name, iso2: c.iso2 }]));
-    const cityMap     = Object.fromEntries((citiesRes.data      ?? []).map((c: any) => [c.id, { id: c.id, name: c.name, slug: c.slug }]));
-    const moduleMap   = Object.fromEntries((modulesRes.data     ?? []).map((m: any) => [m.id, { id: m.id, name: m.module_name }]));
-    const languageMap = Object.fromEntries((languagesRes.data   ?? []).map((l: any) => [l.id, { id: l.id, name: l.name, code: l.code }]));
-    const categoryMap = Object.fromEntries((categoriesRes.data  ?? []).map((c: any) => [c.id, { id: c.id, name: c.name }]));
+    const countryMap    = Object.fromEntries((countriesRes.data   ?? []).map((c: any) => [c.id, { id: c.id, name: c.name, iso2: c.iso2 }]));
+    const cityMap       = Object.fromEntries((citiesRes.data      ?? []).map((c: any) => [c.id, { id: c.id, name: c.name, slug: c.slug }]));
+    const moduleMap     = Object.fromEntries((modulesRes.data     ?? []).map((m: any) => [m.id, { id: m.id, name: m.module_name }]));
+    const languageMap   = Object.fromEntries((languagesRes.data   ?? []).map((l: any) => [l.id, { id: l.id, name: l.name, code: l.code }]));
+    const categoryMap   = Object.fromEntries((categoriesRes.data  ?? []).map((c: any) => [c.id, { id: c.id, name: c.name }]));
+    const collectionMap = Object.fromEntries((collectionsRes.data ?? []).map((c: any) => [c.id, { id: c.id, name: c.name, slug: c.slug }]));
 
     return records.map(r => ({
       ...r,
-      images:   this.parseImages(r.images),
-      country:  r.country_id  ? (countryMap[r.country_id]   ?? null) : null,
-      city:     r.city_id     ? (cityMap[r.city_id]         ?? null) : null,
-      module:   r.module_id   ? (moduleMap[r.module_id]     ?? null) : null,
-      language: r.language_id ? (languageMap[r.language_id] ?? null) : null,
-      category: r.category_id ? (categoryMap[r.category_id] ?? null) : null,
+      images:     this.parseImages(r.images),
+      country:    r.country_id    ? (countryMap[r.country_id]       ?? null) : null,
+      city:       r.city_id       ? (cityMap[r.city_id]             ?? null) : null,
+      module:     r.module_id     ? (moduleMap[r.module_id]         ?? null) : null,
+      language:   r.language_id   ? (languageMap[r.language_id]     ?? null) : null,
+      category:   r.category_id   ? (categoryMap[r.category_id]     ?? null) : null,
+      collection: r.collection_id ? (collectionMap[r.collection_id] ?? null) : null,
     }));
   }
 }

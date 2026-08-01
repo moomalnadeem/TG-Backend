@@ -88,6 +88,7 @@ export class DestinationsController {
         language_id:       { type: 'string', format: 'uuid', example: 'uuid-of-language' },
         seo_id:            { type: 'string', format: 'uuid', example: 'uuid-of-seo' },
         category_id:       { type: 'string', format: 'uuid', example: 'uuid-of-category' },
+        collection_id:     { type: 'string', format: 'uuid', example: 'uuid-of-collection', description: 'Collection this destination belongs to' },
         name:              { type: 'string', example: 'Burj Khalifa' },
         slug:              { type: 'string', example: 'burj-khalifa', description: 'Auto-generated from name if omitted' },
         short_name:        { type: 'string', example: 'Burj Khalifa' },
@@ -100,6 +101,7 @@ export class DestinationsController {
         opening_time:      { type: 'string', example: '09:00', description: 'HH:MM format' },
         closing_time:      { type: 'string', example: '22:00', description: 'HH:MM format' },
         ticket_price:      { type: 'number', example: 149.00 },
+        discounted_price:  { type: 'number', example: 99.00, description: 'Discounted ticket price' },
         currency:          { type: 'string', example: 'AED' },
         duration:          { type: 'string', example: '2-3 hours' },
         contact_number:    { type: 'string', example: '+971 4 888 8888' },
@@ -135,6 +137,7 @@ export class DestinationsController {
   @ApiQuery({ name: 'module_id',      required: false, description: 'Filter by module UUID' })
   @ApiQuery({ name: 'language_id',    required: false, description: 'Filter by language UUID' })
   @ApiQuery({ name: 'category_id',    required: false, description: 'Filter by category UUID' })
+  @ApiQuery({ name: 'collection_id',  required: false, description: 'Filter by collection UUID' })
   @ApiQuery({ name: 'featured',       required: false, example: false })
   @ApiQuery({ name: 'publish_status', required: false, example: true })
   @ApiQuery({ name: 'sortBy',         required: false, enum: ['name', 'slug', 'ticket_price', 'priority', 'created_at', 'updated_at'] })
@@ -175,6 +178,7 @@ export class DestinationsController {
         language_id:       { type: 'string', format: 'uuid' },
         seo_id:            { type: 'string', format: 'uuid' },
         category_id:       { type: 'string', format: 'uuid' },
+        collection_id:     { type: 'string', format: 'uuid', description: 'Collection this destination belongs to' },
         name:              { type: 'string', example: 'Burj Khalifa Updated' },
         slug:              { type: 'string', example: 'burj-khalifa-updated' },
         short_name:        { type: 'string' },
@@ -187,6 +191,7 @@ export class DestinationsController {
         opening_time:      { type: 'string', example: '09:00' },
         closing_time:      { type: 'string', example: '22:00' },
         ticket_price:      { type: 'number' },
+        discounted_price:  { type: 'number', description: 'Discounted ticket price' },
         currency:          { type: 'string' },
         duration:          { type: 'string' },
         contact_number:    { type: 'string' },

@@ -58,6 +58,12 @@ export class UpdateDestinationDto {
   @IsUUID('all', { message: 'category_id must be a valid UUID.' })
   category_id?: string;
 
+  @ApiPropertyOptional({ example: 'uuid-of-collection' })
+  @Transform(toUuid)
+  @IsOptional()
+  @IsUUID('all', { message: 'collection_id must be a valid UUID.' })
+  collection_id?: string;
+
   @ApiPropertyOptional({ example: 'Burj Khalifa' })
   @IsOptional()
   @IsString()
@@ -136,6 +142,14 @@ export class UpdateDestinationDto {
   @IsNumber({}, { message: 'ticket_price must be a number.' })
   @Min(0)
   ticket_price?: number;
+
+  @ApiPropertyOptional({ example: 99.00, description: 'Discounted ticket price' })
+  @Transform(toNumber)
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({}, { message: 'discounted_price must be a number.' })
+  @Min(0)
+  discounted_price?: number;
 
   @ApiPropertyOptional({ example: 'AED' })
   @IsOptional()

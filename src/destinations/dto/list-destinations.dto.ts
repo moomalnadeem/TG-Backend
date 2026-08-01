@@ -14,7 +14,8 @@ export class ListDestinationsDto {
   @IsOptional() @IsUUID('all') city_id?:     string;
   @IsOptional() @IsUUID('all') module_id?:   string;
   @IsOptional() @IsUUID('all') language_id?: string;
-  @IsOptional() @IsUUID('all') category_id?: string;
+  @IsOptional() @IsUUID('all') category_id?:   string;
+  @IsOptional() @IsUUID('all') collection_id?: string;
 
   @IsOptional()
   @Transform(({ value }) => {
