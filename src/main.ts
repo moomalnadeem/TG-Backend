@@ -13,6 +13,7 @@ const API_MODULES = [
   { name: 'Languages',      tag: 'Languages',       path: 'languages',     color: '#7c3aed', icon: '🌐' },
   { name: 'Organizations', tag: 'Organizations',   path: 'organizations', color: '#0f766e', icon: '🏢' },
   { name: 'Countries',     tag: 'Countries',       path: 'countries',     color: '#b45309', icon: '🌍' },
+  { name: 'Cities',        tag: 'Cities',          path: 'cities',        color: '#6d28d9', icon: '🏙️' },
 ];
 
 function filterDocByTag(document: OpenAPIObject, tag: string): OpenAPIObject {
