@@ -57,6 +57,30 @@ export class AttractionsController {
     return this.attractionsService.setup();
   }
 
+  // ─── Seed ────────────────────────────────────────────────────────────────────
+
+  @Post('seed')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Seed 15 real Dubai attractions across 5 destinations (safe to re-run — skips existing)',
+    description: 'Requires UAE country and Dubai city to already exist. Also seeds 5 Dubai destinations (Downtown Dubai, Deira, Jumeirah, Dubai Marina, Palm Jumeirah) if missing.',
+  })
+  @ApiResponse({
+    status: 200,
+    schema: {
+      example: {
+        success: true,
+        message: 'Dubai attractions seed completed. 15 inserted, 0 skipped (already exist or error).',
+        inserted: 15,
+        skipped: 0,
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'UAE country, Dubai city, or modules not found' })
+  seed() {
+    return this.attractionsService.seed();
+  }
+
   // ─── Dropdown ────────────────────────────────────────────────────────────────
 
   @Get('dropdown')
