@@ -10,115 +10,101 @@ import { CreateDestinationDto } from './dto/create-destination.dto';
 import { ListDestinationsDto } from './dto/list-destinations.dto';
 import { UpdateDestinationDto } from './dto/update-destination.dto';
 
-const ALLOWED_MIME_TYPES      = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-const ALLOWED_FLAG_MIME_TYPES = [...ALLOWED_MIME_TYPES, 'image/svg+xml'];
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
 type UploadedFiles = {
-  flag_image?: Express.Multer.File[];
-  thumbnail?:  Express.Multer.File[];
-  banner?:     Express.Multer.File[];
-  images?:     Express.Multer.File[];
+  thumbnail?: Express.Multer.File[];
+  banner?:    Express.Multer.File[];
+  images?:    Express.Multer.File[];
 };
 
 const SETUP_SQL = `
   CREATE TABLE IF NOT EXISTS destinations (
-    id                UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
-    country_id        UUID           NOT NULL,
-    city_id           UUID           NOT NULL,
-    module_id         UUID           NOT NULL,
-    language_id       UUID,
-    seo_id            UUID,
-    category_id       UUID,
-    collection_id     UUID,
-    name              VARCHAR(255)   NOT NULL,
-    slug              VARCHAR(255)   NOT NULL,
-    short_name        VARCHAR(150),
-    short_description TEXT,
-    description       TEXT,
-    address           VARCHAR(500),
-    latitude          NUMERIC(10,8),
-    longitude         NUMERIC(11,8),
-    map_url           VARCHAR(1000),
-    opening_time      VARCHAR(10),
-    closing_time      VARCHAR(10),
-    ticket_price      NUMERIC(10,2),
-    discounted_price  NUMERIC(10,2),
-    currency          VARCHAR(10),
-    duration          VARCHAR(100),
-    contact_number    VARCHAR(30),
-    email             VARCHAR(255),
-    website           VARCHAR(500),
-    featured          BOOLEAN        NOT NULL DEFAULT false,
-    priority          INTEGER        NOT NULL DEFAULT 0,
-    flag_image        VARCHAR(500),
-    thumbnail         VARCHAR(500),
-    banner            VARCHAR(500),
-    images            TEXT,
-    publish_status    BOOLEAN        NOT NULL DEFAULT true,
-    created_at        TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
-    updated_at        TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
-    deleted_at        TIMESTAMPTZ
+    id               UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    country_id       UUID         NOT NULL,
+    city_id          UUID         NOT NULL,
+    module_id        UUID         NOT NULL,
+    category_id      UUID,
+    collection_id    UUID,
+    name             VARCHAR(255) NOT NULL,
+    slug             VARCHAR(255) NOT NULL,
+    description      TEXT,
+    address          VARCHAR(500),
+    latitude         NUMERIC(10,8),
+    longitude        NUMERIC(11,8),
+    map_url          VARCHAR(1000),
+    opening_time     VARCHAR(10),
+    closing_time     VARCHAR(10),
+    ticket_price     NUMERIC(10,2),
+    discounted_price NUMERIC(10,2),
+    currency         VARCHAR(10),
+    duration         VARCHAR(100),
+    contact_number   VARCHAR(30),
+    email            VARCHAR(255),
+    thumbnail        VARCHAR(500),
+    banner           VARCHAR(500),
+    images           TEXT,
+    priority         INTEGER      NOT NULL DEFAULT 0,
+    publish_status   BOOLEAN      NOT NULL DEFAULT true,
+    created_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    deleted_at       TIMESTAMPTZ
   );
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS country_id        UUID;
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS city_id           UUID;
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS module_id         UUID;
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS language_id       UUID;
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS seo_id            UUID;
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS category_id       UUID;
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS collection_id     UUID;
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS short_name        VARCHAR(150);
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS short_description TEXT;
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS description       TEXT;
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS address           VARCHAR(500);
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS latitude          NUMERIC(10,8);
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS longitude         NUMERIC(11,8);
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS map_url           VARCHAR(1000);
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS opening_time      VARCHAR(10);
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS closing_time      VARCHAR(10);
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS ticket_price      NUMERIC(10,2);
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS discounted_price  NUMERIC(10,2);
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS currency          VARCHAR(10);
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS duration          VARCHAR(100);
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS contact_number    VARCHAR(30);
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS email             VARCHAR(255);
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS website           VARCHAR(500);
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS featured          BOOLEAN NOT NULL DEFAULT false;
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS priority          INTEGER NOT NULL DEFAULT 0;
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS flag_image        VARCHAR(500);
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS thumbnail         VARCHAR(500);
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS banner            VARCHAR(500);
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS images            TEXT;
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS publish_status    BOOLEAN NOT NULL DEFAULT true;
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW();
-  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS deleted_at        TIMESTAMPTZ;
-  CREATE UNIQUE INDEX IF NOT EXISTS idx_dest_slug           ON destinations(slug)              WHERE deleted_at IS NULL;
-  CREATE UNIQUE INDEX IF NOT EXISTS idx_dest_name_city      ON destinations(name, city_id)     WHERE deleted_at IS NULL;
-  CREATE INDEX        IF NOT EXISTS idx_dest_country_id     ON destinations(country_id);
-  CREATE INDEX        IF NOT EXISTS idx_dest_city_id        ON destinations(city_id);
-  CREATE INDEX        IF NOT EXISTS idx_dest_module_id      ON destinations(module_id);
-  CREATE INDEX        IF NOT EXISTS idx_dest_language_id    ON destinations(language_id);
-  CREATE INDEX        IF NOT EXISTS idx_dest_category_id    ON destinations(category_id);
-  CREATE INDEX        IF NOT EXISTS idx_dest_collection_id  ON destinations(collection_id);
-  CREATE INDEX        IF NOT EXISTS idx_dest_featured       ON destinations(featured);
-  CREATE INDEX        IF NOT EXISTS idx_dest_priority       ON destinations(priority);
-  CREATE INDEX        IF NOT EXISTS idx_dest_publish_status ON destinations(publish_status);
-  CREATE INDEX        IF NOT EXISTS idx_dest_deleted_at     ON destinations(deleted_at);
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS category_id      UUID;
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS collection_id    UUID;
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS description      TEXT;
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS address          VARCHAR(500);
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS latitude         NUMERIC(10,8);
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS longitude        NUMERIC(11,8);
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS map_url          VARCHAR(1000);
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS opening_time     VARCHAR(10);
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS closing_time     VARCHAR(10);
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS ticket_price     NUMERIC(10,2);
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS discounted_price NUMERIC(10,2);
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS currency         VARCHAR(10);
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS duration         VARCHAR(100);
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS contact_number   VARCHAR(30);
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS email            VARCHAR(255);
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS thumbnail        VARCHAR(500);
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS banner           VARCHAR(500);
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS images           TEXT;
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS priority         INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS publish_status   BOOLEAN NOT NULL DEFAULT true;
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW();
+  ALTER TABLE destinations ADD COLUMN IF NOT EXISTS deleted_at       TIMESTAMPTZ;
+  ALTER TABLE destinations DROP COLUMN IF EXISTS language_id;
+  ALTER TABLE destinations DROP COLUMN IF EXISTS seo_id;
+  ALTER TABLE destinations DROP COLUMN IF EXISTS short_name;
+  ALTER TABLE destinations DROP COLUMN IF EXISTS short_description;
+  ALTER TABLE destinations DROP COLUMN IF EXISTS website;
+  ALTER TABLE destinations DROP COLUMN IF EXISTS featured;
+  ALTER TABLE destinations DROP COLUMN IF EXISTS flag_image;
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_dest_slug          ON destinations(slug)           WHERE deleted_at IS NULL;
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_dest_name_city     ON destinations(name, city_id)  WHERE deleted_at IS NULL;
+  CREATE INDEX        IF NOT EXISTS idx_dest_country_id    ON destinations(country_id);
+  CREATE INDEX        IF NOT EXISTS idx_dest_city_id       ON destinations(city_id);
+  CREATE INDEX        IF NOT EXISTS idx_dest_module_id     ON destinations(module_id);
+  CREATE INDEX        IF NOT EXISTS idx_dest_category_id   ON destinations(category_id);
+  CREATE INDEX        IF NOT EXISTS idx_dest_collection_id ON destinations(collection_id);
+  CREATE INDEX        IF NOT EXISTS idx_dest_priority      ON destinations(priority);
+  CREATE INDEX        IF NOT EXISTS idx_dest_publish       ON destinations(publish_status);
+  CREATE INDEX        IF NOT EXISTS idx_dest_deleted_at    ON destinations(deleted_at);
   SELECT pg_notify('pgrst', 'reload schema');
 `;
 
 const DEST_LIST_FIELDS = [
-  'id', 'country_id', 'city_id', 'module_id', 'language_id', 'category_id', 'collection_id',
-  'name', 'slug', 'short_name', 'thumbnail', 'flag_image',
-  'ticket_price', 'discounted_price', 'currency', 'featured', 'priority', 'publish_status', 'created_at',
+  'id', 'country_id', 'city_id', 'module_id', 'category_id', 'collection_id',
+  'name', 'slug', 'thumbnail',
+  'ticket_price', 'discounted_price', 'currency', 'priority', 'publish_status', 'created_at',
 ].join(', ');
 
 const DEST_DETAIL_FIELDS = [
-  'id', 'country_id', 'city_id', 'module_id', 'language_id', 'seo_id', 'category_id', 'collection_id',
-  'name', 'slug', 'short_name', 'short_description', 'description',
+  'id', 'country_id', 'city_id', 'module_id', 'category_id', 'collection_id',
+  'name', 'slug', 'description',
   'address', 'latitude', 'longitude', 'map_url',
   'opening_time', 'closing_time', 'ticket_price', 'discounted_price', 'currency', 'duration',
-  'contact_number', 'email', 'website',
-  'featured', 'priority', 'flag_image', 'thumbnail', 'banner', 'images',
+  'contact_number', 'email',
+  'priority', 'thumbnail', 'banner', 'images',
   'publish_status', 'created_at', 'updated_at',
 ].join(', ');
 
@@ -180,56 +166,46 @@ export class DestinationsService {
     await this.validateRef('countries', dto.country_id, 'name');
     await this.validateCityBelongsToCountry(dto.city_id, dto.country_id);
     await this.validateRef('modules', dto.module_id, 'module_name');
-    if (dto.language_id) await this.validateRef('languages', dto.language_id, 'name');
-    if (dto.seo_id)      await this.validateSeoRef(dto.seo_id);
-    if (dto.category_id) await this.validateRef('destination_categories', dto.category_id, 'name');
+    if (dto.category_id)   await this.validateRef('destination_categories', dto.category_id, 'name');
 
     const slug = dto.slug ?? this.generateSlug(dto.name);
     await this.assertUniqueSlug(slug);
     await this.assertUniqueName(dto.name, dto.city_id);
 
-    const [flagUrl, thumbnailUrl, bannerUrl, imageUrls] = await Promise.all([
-      files?.flag_image?.[0] ? this.uploadFile(files.flag_image[0], 'dest-flags',      ALLOWED_FLAG_MIME_TYPES) : Promise.resolve(null),
-      files?.thumbnail?.[0]  ? this.uploadFile(files.thumbnail[0],  'dest-thumbnails', ALLOWED_MIME_TYPES)      : Promise.resolve(null),
-      files?.banner?.[0]     ? this.uploadFile(files.banner[0],     'dest-banners',    ALLOWED_MIME_TYPES)      : Promise.resolve(null),
-      files?.images?.length  ? this.uploadMultiple(files.images,    'dest-images',     ALLOWED_MIME_TYPES)      : Promise.resolve([]),
+    const [thumbnailUrl, bannerUrl, imageUrls] = await Promise.all([
+      files?.thumbnail?.[0] ? this.uploadFile(files.thumbnail[0], 'dest-thumbnails', ALLOWED_MIME_TYPES) : Promise.resolve(null),
+      files?.banner?.[0]    ? this.uploadFile(files.banner[0],    'dest-banners',    ALLOWED_MIME_TYPES) : Promise.resolve(null),
+      files?.images?.length ? this.uploadMultiple(files.images,   'dest-images',     ALLOWED_MIME_TYPES) : Promise.resolve([]),
     ]);
 
     const { data, error } = await this.supabase.db
       .from('destinations')
       .insert({
-        country_id:        dto.country_id,
-        city_id:           dto.city_id,
-        module_id:         dto.module_id,
-        language_id:       dto.language_id       ?? null,
-        seo_id:            dto.seo_id            ?? null,
-        category_id:       dto.category_id       ?? null,
-        collection_id:     dto.collection_id     ?? null,
-        name:              dto.name,
+        country_id:       dto.country_id,
+        city_id:          dto.city_id,
+        module_id:        dto.module_id,
+        category_id:      dto.category_id      ?? null,
+        collection_id:    dto.collection_id    ?? null,
+        name:             dto.name,
         slug,
-        short_name:        dto.short_name        ?? null,
-        short_description: dto.short_description ?? null,
-        description:       dto.description       ?? null,
-        address:           dto.address           ?? null,
-        latitude:          dto.latitude          ?? null,
-        longitude:         dto.longitude         ?? null,
-        map_url:           dto.map_url           ?? null,
-        opening_time:      dto.opening_time      ?? null,
-        closing_time:      dto.closing_time      ?? null,
-        ticket_price:      dto.ticket_price      ?? null,
-        discounted_price:  dto.discounted_price  ?? null,
-        currency:          dto.currency          ?? null,
-        duration:          dto.duration          ?? null,
-        contact_number:    dto.contact_number    ?? null,
-        email:             dto.email             ?? null,
-        website:           dto.website           ?? null,
-        featured:          dto.featured,
-        priority:          dto.priority  ?? 0,
-        flag_image:        flagUrl,
-        thumbnail:         thumbnailUrl,
-        banner:            bannerUrl,
-        images:            imageUrls.length ? JSON.stringify(imageUrls) : null,
-        publish_status:    dto.publish_status,
+        description:      dto.description      ?? null,
+        address:          dto.address          ?? null,
+        latitude:         dto.latitude         ?? null,
+        longitude:        dto.longitude        ?? null,
+        map_url:          dto.map_url          ?? null,
+        opening_time:     dto.opening_time     ?? null,
+        closing_time:     dto.closing_time     ?? null,
+        ticket_price:     dto.ticket_price     ?? null,
+        discounted_price: dto.discounted_price ?? null,
+        currency:         dto.currency         ?? null,
+        duration:         dto.duration         ?? null,
+        contact_number:   dto.contact_number   ?? null,
+        email:            dto.email            ?? null,
+        priority:         dto.priority         ?? 0,
+        thumbnail:        thumbnailUrl,
+        banner:           bannerUrl,
+        images:           imageUrls.length ? JSON.stringify(imageUrls) : null,
+        publish_status:   dto.publish_status,
       })
       .select(DEST_DETAIL_FIELDS)
       .single();
@@ -245,8 +221,8 @@ export class DestinationsService {
   async findAll(query: ListDestinationsDto) {
     const {
       page = 1, limit = 10, search,
-      country_id, city_id, module_id, language_id, category_id, collection_id,
-      featured, publish_status,
+      country_id, city_id, module_id, category_id, collection_id,
+      publish_status,
       sortBy = 'created_at', sortOrder = 'DESC',
     } = query;
 
@@ -258,18 +234,14 @@ export class DestinationsService {
       .is('deleted_at', null);
 
     if (search) {
-      dbQuery = dbQuery.or(
-        `name.ilike.%${search}%,slug.ilike.%${search}%,short_name.ilike.%${search}%,address.ilike.%${search}%`,
-      );
+      dbQuery = dbQuery.or(`name.ilike.%${search}%,slug.ilike.%${search}%,address.ilike.%${search}%`);
     }
-    if (country_id)                   dbQuery = dbQuery.eq('country_id',     country_id);
-    if (city_id)                      dbQuery = dbQuery.eq('city_id',        city_id);
-    if (module_id)                    dbQuery = dbQuery.eq('module_id',      module_id);
-    if (language_id)                  dbQuery = dbQuery.eq('language_id',    language_id);
-    if (category_id)                  dbQuery = dbQuery.eq('category_id',    category_id);
-    if (collection_id)                dbQuery = dbQuery.eq('collection_id',  collection_id);
-    if (featured        !== undefined) dbQuery = dbQuery.eq('featured',       featured);
-    if (publish_status  !== undefined) dbQuery = dbQuery.eq('publish_status', publish_status);
+    if (country_id)                   dbQuery = dbQuery.eq('country_id',    country_id);
+    if (city_id)                      dbQuery = dbQuery.eq('city_id',       city_id);
+    if (module_id)                    dbQuery = dbQuery.eq('module_id',     module_id);
+    if (category_id)                  dbQuery = dbQuery.eq('category_id',   category_id);
+    if (collection_id)                dbQuery = dbQuery.eq('collection_id', collection_id);
+    if (publish_status !== undefined) dbQuery = dbQuery.eq('publish_status', publish_status);
 
     const { data, error, count } = await dbQuery
       .order(sortBy, { ascending: sortOrder === 'ASC' })
@@ -320,9 +292,7 @@ export class DestinationsService {
     if (dto.city_id || dto.country_id) {
       await this.validateCityBelongsToCountry(effectiveCityId, effectiveCountryId);
     }
-    if (dto.module_id)   await this.validateRef('modules',   dto.module_id,   'module_name');
-    if (dto.language_id) await this.validateRef('languages', dto.language_id, 'name');
-    if (dto.seo_id)      await this.validateSeoRef(dto.seo_id);
+    if (dto.module_id)   await this.validateRef('modules',                dto.module_id,   'module_name');
     if (dto.category_id) await this.validateRef('destination_categories', dto.category_id, 'name');
 
     const updates: Record<string, any> = { ...dto, updated_at: new Date().toISOString() };
@@ -335,15 +305,13 @@ export class DestinationsService {
 
     if (dto.name) await this.assertUniqueName(dto.name, effectiveCityId, id);
 
-    const [flagUrl, thumbnailUrl, bannerUrl] = await Promise.all([
-      files?.flag_image?.[0] ? this.uploadFile(files.flag_image[0], 'dest-flags',      ALLOWED_FLAG_MIME_TYPES) : Promise.resolve(null),
-      files?.thumbnail?.[0]  ? this.uploadFile(files.thumbnail[0],  'dest-thumbnails', ALLOWED_MIME_TYPES)      : Promise.resolve(null),
-      files?.banner?.[0]     ? this.uploadFile(files.banner[0],     'dest-banners',    ALLOWED_MIME_TYPES)      : Promise.resolve(null),
+    const [thumbnailUrl, bannerUrl] = await Promise.all([
+      files?.thumbnail?.[0] ? this.uploadFile(files.thumbnail[0], 'dest-thumbnails', ALLOWED_MIME_TYPES) : Promise.resolve(null),
+      files?.banner?.[0]    ? this.uploadFile(files.banner[0],    'dest-banners',    ALLOWED_MIME_TYPES) : Promise.resolve(null),
     ]);
 
-    if (flagUrl)      updates.flag_image = flagUrl;
-    if (thumbnailUrl) updates.thumbnail  = thumbnailUrl;
-    if (bannerUrl)    updates.banner     = bannerUrl;
+    if (thumbnailUrl) updates.thumbnail = thumbnailUrl;
+    if (bannerUrl)    updates.banner    = bannerUrl;
 
     if (files?.images?.length) {
       const newUrls  = await this.uploadMultiple(files.images, 'dest-images', ALLOWED_MIME_TYPES);
@@ -502,15 +470,6 @@ export class DestinationsService {
     if (!data) throw new NotFoundException(`${table.replace(/_/g, ' ').replace(/s$/, '')} not found.`);
   }
 
-  private async validateSeoRef(id: string) {
-    const { data } = await this.supabase.db
-      .from('seo')
-      .select('id')
-      .eq('id', id)
-      .maybeSingle();
-    if (!data) throw new NotFoundException('SEO record not found.');
-  }
-
   private async uploadFile(
     file: Express.Multer.File,
     folder: string,
@@ -563,23 +522,20 @@ export class DestinationsService {
     const countryIds    = pick(records, 'country_id');
     const cityIds       = pick(records, 'city_id');
     const moduleIds     = pick(records, 'module_id');
-    const languageIds   = pick(records, 'language_id');
     const categoryIds   = pick(records, 'category_id');
     const collectionIds = pick(records, 'collection_id');
 
-    const [countriesRes, citiesRes, modulesRes, languagesRes, categoriesRes, collectionsRes] = await Promise.all([
-      countryIds.length    ? this.supabase.db.from('countries').select('id, name, iso2').in('id', countryIds)                        : { data: [] },
-      cityIds.length       ? this.supabase.db.from('cities').select('id, name, slug').in('id', cityIds)                              : { data: [] },
-      moduleIds.length     ? this.supabase.db.from('modules').select('id, module_name').in('id', moduleIds)                          : { data: [] },
-      languageIds.length   ? this.supabase.db.from('languages').select('id, name, code').in('id', languageIds)                       : { data: [] },
+    const [countriesRes, citiesRes, modulesRes, categoriesRes, collectionsRes] = await Promise.all([
+      countryIds.length    ? this.supabase.db.from('countries').select('id, name, iso2').in('id', countryIds)                              : { data: [] },
+      cityIds.length       ? this.supabase.db.from('cities').select('id, name, slug').in('id', cityIds)                                    : { data: [] },
+      moduleIds.length     ? this.supabase.db.from('modules').select('id, module_name').in('id', moduleIds)                                : { data: [] },
       categoryIds.length   ? this.fetchCategories(categoryIds) : Promise.resolve({ data: [] }),
-      collectionIds.length ? this.supabase.db.from('collections').select('id, name, slug').in('id', collectionIds).is('deleted_at', null) : { data: [] },
+      collectionIds.length ? this.supabase.db.from('collections').select('id, name, slug').in('id', collectionIds).is('deleted_at', null)  : { data: [] },
     ]);
 
     const countryMap    = Object.fromEntries((countriesRes.data   ?? []).map((c: any) => [c.id, { id: c.id, name: c.name, iso2: c.iso2 }]));
     const cityMap       = Object.fromEntries((citiesRes.data      ?? []).map((c: any) => [c.id, { id: c.id, name: c.name, slug: c.slug }]));
     const moduleMap     = Object.fromEntries((modulesRes.data     ?? []).map((m: any) => [m.id, { id: m.id, name: m.module_name }]));
-    const languageMap   = Object.fromEntries((languagesRes.data   ?? []).map((l: any) => [l.id, { id: l.id, name: l.name, code: l.code }]));
     const categoryMap   = Object.fromEntries((categoriesRes.data  ?? []).map((c: any) => [c.id, { id: c.id, name: c.name }]));
     const collectionMap = Object.fromEntries((collectionsRes.data ?? []).map((c: any) => [c.id, { id: c.id, name: c.name, slug: c.slug }]));
 
@@ -589,7 +545,6 @@ export class DestinationsService {
       country:    r.country_id    ? (countryMap[r.country_id]       ?? null) : null,
       city:       r.city_id       ? (cityMap[r.city_id]             ?? null) : null,
       module:     r.module_id     ? (moduleMap[r.module_id]         ?? null) : null,
-      language:   r.language_id   ? (languageMap[r.language_id]     ?? null) : null,
       category:   r.category_id   ? (categoryMap[r.category_id]     ?? null) : null,
       collection: r.collection_id ? (collectionMap[r.collection_id] ?? null) : null,
     }));

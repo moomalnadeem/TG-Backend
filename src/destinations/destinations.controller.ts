@@ -51,7 +51,7 @@ export class DestinationsController {
 
   @Post('setup')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Create destinations table and indexes (safe to re-run)' })
+  @ApiOperation({ summary: 'Create / migrate destinations table and indexes (safe to re-run)' })
   @ApiResponse({ status: 200, schema: { example: { success: true, message: 'Destinations table migrated successfully.' } } })
   setup() {
     return this.destinationsService.setup();
@@ -60,7 +60,7 @@ export class DestinationsController {
   // ─── Dropdown ────────────────────────────────────────────────────────────────
 
   @Get('dropdown')
-  @ApiOperation({ summary: 'Destinations dropdown — id, name, slug. Filter by country_id and/or city_id.' })
+  @ApiOperation({ summary: 'Lightweight dropdown — id, name, slug. Filter by country_id and/or city_id.' })
   @ApiQuery({ name: 'country_id', required: false, description: 'Filter by country UUID' })
   @ApiQuery({ name: 'city_id',    required: false, description: 'Filter by city UUID' })
   @ApiResponse({ status: 200, schema: { example: { success: true, data: [{ id: 'uuid', name: 'Burj Khalifa', slug: 'burj-khalifa', country_id: 'uuid', city_id: 'uuid' }] } } })
@@ -76,50 +76,43 @@ export class DestinationsController {
   @Post()
   @UseInterceptors(AnyFilesInterceptor())
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Create a new destination with optional flag, thumbnail, banner, and gallery images' })
+  @ApiOperation({ summary: 'Create a new destination' })
   @ApiBody({
     schema: {
       type: 'object',
-      required: ['country_id', 'city_id', 'module_id', 'name', 'featured', 'publish_status'],
+      required: ['country_id', 'city_id', 'module_id', 'name', 'publish_status'],
       properties: {
-        country_id:        { type: 'string', format: 'uuid', example: 'uuid-of-country' },
-        city_id:           { type: 'string', format: 'uuid', example: 'uuid-of-city', description: 'Must belong to the selected country' },
-        module_id:         { type: 'string', format: 'uuid', example: 'uuid-of-module' },
-        language_id:       { type: 'string', format: 'uuid', example: 'uuid-of-language' },
-        seo_id:            { type: 'string', format: 'uuid', example: 'uuid-of-seo' },
-        category_id:       { type: 'string', format: 'uuid', example: 'uuid-of-category' },
-        collection_id:     { type: 'string', format: 'uuid', example: 'uuid-of-collection', description: 'Collection this destination belongs to' },
-        name:              { type: 'string', example: 'Burj Khalifa' },
-        slug:              { type: 'string', example: 'burj-khalifa', description: 'Auto-generated from name if omitted' },
-        short_name:        { type: 'string', example: 'Burj Khalifa' },
-        short_description: { type: 'string', example: 'The tallest building in the world.' },
-        description:       { type: 'string', example: 'Full description...' },
-        address:           { type: 'string', example: '1 Sheikh Mohammed bin Rashid Blvd, Dubai' },
-        latitude:          { type: 'number', example: 25.197197, description: '-90 to 90' },
-        longitude:         { type: 'number', example: 55.274376, description: '-180 to 180' },
-        map_url:           { type: 'string', example: 'https://maps.google.com/?q=Burj+Khalifa' },
-        opening_time:      { type: 'string', example: '09:00', description: 'HH:MM format' },
-        closing_time:      { type: 'string', example: '22:00', description: 'HH:MM format' },
-        ticket_price:      { type: 'number', example: 149.00 },
-        discounted_price:  { type: 'number', example: 99.00, description: 'Discounted ticket price' },
-        currency:          { type: 'string', example: 'AED' },
-        duration:          { type: 'string', example: '2-3 hours' },
-        contact_number:    { type: 'string', example: '+971 4 888 8888' },
-        email:             { type: 'string', format: 'email', example: 'info@burjkhalifa.ae' },
-        website:           { type: 'string', example: 'https://www.burjkhalifa.ae' },
-        priority:          { type: 'integer', example: 0, description: 'Sort priority — lower number appears first (default 0)' },
-        featured:          { type: 'boolean', example: false },
-        publish_status:    { type: 'boolean', example: true },
-        flag_image:        { type: 'string', format: 'binary', description: 'Flag image (jpg, png, webp, svg)' },
-        thumbnail:         { type: 'string', format: 'binary', description: 'Thumbnail (jpg, png, webp)' },
-        banner:            { type: 'string', format: 'binary', description: 'Banner (jpg, png, webp)' },
-        images:            { type: 'array', items: { type: 'string', format: 'binary' }, description: 'Gallery images (multiple)' },
+        country_id:       { type: 'string', format: 'uuid', example: 'uuid-of-country' },
+        city_id:          { type: 'string', format: 'uuid', example: 'uuid-of-city', description: 'Must belong to the selected country' },
+        module_id:        { type: 'string', format: 'uuid', example: 'uuid-of-module' },
+        category_id:      { type: 'string', format: 'uuid', example: 'uuid-of-category' },
+        collection_id:    { type: 'string', format: 'uuid', example: 'uuid-of-collection' },
+        name:             { type: 'string', example: 'Burj Khalifa' },
+        slug:             { type: 'string', example: 'burj-khalifa', description: 'Auto-generated from name if omitted' },
+        description:      { type: 'string', example: 'Full description...' },
+        address:          { type: 'string', example: '1 Sheikh Mohammed bin Rashid Blvd, Dubai' },
+        latitude:         { type: 'number', example: 25.197197, description: '-90 to 90' },
+        longitude:        { type: 'number', example: 55.274376, description: '-180 to 180' },
+        map_url:          { type: 'string', example: 'https://maps.google.com/?q=Burj+Khalifa' },
+        opening_time:     { type: 'string', example: '09:00', description: 'HH:MM format' },
+        closing_time:     { type: 'string', example: '22:00', description: 'HH:MM format' },
+        ticket_price:     { type: 'number', example: 149.00 },
+        discounted_price: { type: 'number', example: 99.00, description: 'Discounted ticket price' },
+        currency:         { type: 'string', example: 'AED' },
+        duration:         { type: 'string', example: '2-3 hours' },
+        contact_number:   { type: 'string', example: '+971 4 888 8888' },
+        email:            { type: 'string', format: 'email', example: 'info@burjkhalifa.ae' },
+        priority:         { type: 'integer', example: 0, description: 'Sort priority — lower number appears first (default 0)' },
+        publish_status:   { type: 'boolean', example: true },
+        thumbnail:        { type: 'string', format: 'binary', description: 'Thumbnail (jpg, png, webp)' },
+        banner:           { type: 'string', format: 'binary', description: 'Banner (jpg, png, webp)' },
+        images:           { type: 'array', items: { type: 'string', format: 'binary' }, description: 'Gallery images (multiple)' },
       },
     },
   })
   @ApiResponse({ status: 201, description: 'Destination created successfully' })
   @ApiResponse({ status: 400, description: 'Validation error' })
-  @ApiResponse({ status: 404, description: 'Country, city, module, or language not found; or city does not belong to country' })
+  @ApiResponse({ status: 404, description: 'Country, city, or module not found; or city does not belong to country' })
   @ApiResponse({ status: 409, description: 'Slug or destination name in this city already exists' })
   create(@Body() dto: CreateDestinationDto, @UploadedFiles() files: any) {
     return this.destinationsService.create(dto, groupFiles(files));
@@ -131,18 +124,16 @@ export class DestinationsController {
   @ApiOperation({ summary: 'List destinations with pagination, search, filters, and sort' })
   @ApiQuery({ name: 'page',           required: false, example: 1 })
   @ApiQuery({ name: 'limit',          required: false, example: 10 })
-  @ApiQuery({ name: 'search',         required: false, example: 'burj', description: 'Search by name, slug, short_name, or address' })
+  @ApiQuery({ name: 'search',         required: false, example: 'burj', description: 'Search by name, slug, or address' })
   @ApiQuery({ name: 'country_id',     required: false, description: 'Filter by country UUID' })
   @ApiQuery({ name: 'city_id',        required: false, description: 'Filter by city UUID' })
   @ApiQuery({ name: 'module_id',      required: false, description: 'Filter by module UUID' })
-  @ApiQuery({ name: 'language_id',    required: false, description: 'Filter by language UUID' })
   @ApiQuery({ name: 'category_id',    required: false, description: 'Filter by category UUID' })
   @ApiQuery({ name: 'collection_id',  required: false, description: 'Filter by collection UUID' })
-  @ApiQuery({ name: 'featured',       required: false, example: false })
   @ApiQuery({ name: 'publish_status', required: false, example: true })
-  @ApiQuery({ name: 'sortBy',         required: false, enum: ['name', 'slug', 'ticket_price', 'priority', 'created_at', 'updated_at'] })
+  @ApiQuery({ name: 'sortBy',         required: false, enum: ['name', 'slug', 'ticket_price', 'discounted_price', 'priority', 'created_at', 'updated_at'] })
   @ApiQuery({ name: 'sortOrder',      required: false, enum: ['ASC', 'DESC'] })
-  @ApiResponse({ status: 200, description: 'Paginated list of destinations with country, city, module, language, category' })
+  @ApiResponse({ status: 200, description: 'Paginated list of destinations with country, city, module, category, collection' })
   findAll(@Query() query: ListDestinationsDto) {
     return this.destinationsService.findAll(query);
   }
@@ -165,45 +156,38 @@ export class DestinationsController {
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
     summary: 'Update a destination — new gallery images are appended, not replaced',
-    description: 'Use DELETE /api/destinations/:id/gallery to remove specific images. Flag, thumbnail, and banner are replaced when new files are provided.',
+    description: 'Use DELETE /api/destinations/:id/gallery to remove specific images. Thumbnail and banner are replaced when new files are provided.',
   })
   @ApiParam({ name: 'id', description: 'Destination UUID' })
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
-        country_id:        { type: 'string', format: 'uuid' },
-        city_id:           { type: 'string', format: 'uuid' },
-        module_id:         { type: 'string', format: 'uuid' },
-        language_id:       { type: 'string', format: 'uuid' },
-        seo_id:            { type: 'string', format: 'uuid' },
-        category_id:       { type: 'string', format: 'uuid' },
-        collection_id:     { type: 'string', format: 'uuid', description: 'Collection this destination belongs to' },
-        name:              { type: 'string', example: 'Burj Khalifa Updated' },
-        slug:              { type: 'string', example: 'burj-khalifa-updated' },
-        short_name:        { type: 'string' },
-        short_description: { type: 'string' },
-        description:       { type: 'string' },
-        address:           { type: 'string' },
-        latitude:          { type: 'number' },
-        longitude:         { type: 'number' },
-        map_url:           { type: 'string' },
-        opening_time:      { type: 'string', example: '09:00' },
-        closing_time:      { type: 'string', example: '22:00' },
-        ticket_price:      { type: 'number' },
-        discounted_price:  { type: 'number', description: 'Discounted ticket price' },
-        currency:          { type: 'string' },
-        duration:          { type: 'string' },
-        contact_number:    { type: 'string' },
-        email:             { type: 'string', format: 'email' },
-        website:           { type: 'string' },
-        priority:          { type: 'integer', example: 0, description: 'Sort priority — lower number appears first (default 0)' },
-        featured:          { type: 'boolean' },
-        publish_status:    { type: 'boolean' },
-        flag_image:        { type: 'string', format: 'binary' },
-        thumbnail:         { type: 'string', format: 'binary' },
-        banner:            { type: 'string', format: 'binary' },
-        images:            { type: 'array', items: { type: 'string', format: 'binary' }, description: 'New images to append to gallery' },
+        country_id:       { type: 'string', format: 'uuid' },
+        city_id:          { type: 'string', format: 'uuid' },
+        module_id:        { type: 'string', format: 'uuid' },
+        category_id:      { type: 'string', format: 'uuid' },
+        collection_id:    { type: 'string', format: 'uuid' },
+        name:             { type: 'string', example: 'Burj Khalifa Updated' },
+        slug:             { type: 'string', example: 'burj-khalifa-updated' },
+        description:      { type: 'string' },
+        address:          { type: 'string' },
+        latitude:         { type: 'number' },
+        longitude:        { type: 'number' },
+        map_url:          { type: 'string' },
+        opening_time:     { type: 'string', example: '09:00' },
+        closing_time:     { type: 'string', example: '22:00' },
+        ticket_price:     { type: 'number' },
+        discounted_price: { type: 'number', description: 'Discounted ticket price' },
+        currency:         { type: 'string' },
+        duration:         { type: 'string' },
+        contact_number:   { type: 'string' },
+        email:            { type: 'string', format: 'email' },
+        priority:         { type: 'integer', example: 0 },
+        publish_status:   { type: 'boolean' },
+        thumbnail:        { type: 'string', format: 'binary', description: 'Replaces existing thumbnail' },
+        banner:           { type: 'string', format: 'binary', description: 'Replaces existing banner' },
+        images:           { type: 'array', items: { type: 'string', format: 'binary' }, description: 'New images appended to gallery' },
       },
     },
   })

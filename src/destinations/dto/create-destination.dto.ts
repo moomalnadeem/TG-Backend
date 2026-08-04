@@ -45,25 +45,13 @@ export class CreateDestinationDto {
   @IsUUID('all', { message: 'module_id must be a valid UUID.' })
   module_id: string;
 
-  @ApiPropertyOptional({ example: 'uuid-of-language' })
-  @Transform(toUuid)
-  @IsOptional()
-  @IsUUID('all', { message: 'language_id must be a valid UUID.' })
-  language_id?: string;
-
-  @ApiPropertyOptional({ example: 'uuid-of-seo' })
-  @Transform(toUuid)
-  @IsOptional()
-  @IsUUID('all', { message: 'seo_id must be a valid UUID.' })
-  seo_id?: string;
-
-  @ApiPropertyOptional({ example: 'uuid-of-category', description: 'Destination category UUID' })
+  @ApiPropertyOptional({ example: 'uuid-of-category' })
   @Transform(toUuid)
   @IsOptional()
   @IsUUID('all', { message: 'category_id must be a valid UUID.' })
   category_id?: string;
 
-  @ApiPropertyOptional({ example: 'uuid-of-collection', description: 'Collection this destination belongs to' })
+  @ApiPropertyOptional({ example: 'uuid-of-collection' })
   @Transform(toUuid)
   @IsOptional()
   @IsUUID('all', { message: 'collection_id must be a valid UUID.' })
@@ -80,18 +68,6 @@ export class CreateDestinationDto {
   @IsString()
   @MaxLength(255)
   slug?: string;
-
-  @ApiPropertyOptional({ example: 'Burj Khalifa' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(150)
-  short_name?: string;
-
-  @ApiPropertyOptional({ example: 'The tallest building in the world.' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(500)
-  short_description?: string;
 
   @ApiPropertyOptional({ example: 'Full description of the destination...' })
   @IsOptional()
@@ -180,12 +156,6 @@ export class CreateDestinationDto {
   @MaxLength(255)
   email?: string;
 
-  @ApiPropertyOptional({ example: 'https://www.burjkhalifa.ae' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(500)
-  website?: string;
-
   @ApiPropertyOptional({ example: 0, description: 'Sort priority — lower number appears first (default 0)' })
   @IsOptional()
   @Transform(toNumber)
@@ -193,11 +163,6 @@ export class CreateDestinationDto {
   @IsInt({ message: 'priority must be an integer.' })
   @Min(0)
   priority?: number;
-
-  @ApiProperty({ example: false, description: 'Featured destination' })
-  @Transform(toBool)
-  @IsBoolean({ message: 'featured must be a boolean.' })
-  featured: boolean;
 
   @ApiProperty({ example: true, description: 'Publish status' })
   @Transform(toBool)

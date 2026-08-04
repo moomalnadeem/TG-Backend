@@ -40,18 +40,6 @@ export class UpdateDestinationDto {
   @IsUUID('all', { message: 'module_id must be a valid UUID.' })
   module_id?: string;
 
-  @ApiPropertyOptional({ example: 'uuid-of-language' })
-  @Transform(toUuid)
-  @IsOptional()
-  @IsUUID('all', { message: 'language_id must be a valid UUID.' })
-  language_id?: string;
-
-  @ApiPropertyOptional({ example: 'uuid-of-seo' })
-  @Transform(toUuid)
-  @IsOptional()
-  @IsUUID('all', { message: 'seo_id must be a valid UUID.' })
-  seo_id?: string;
-
   @ApiPropertyOptional({ example: 'uuid-of-category' })
   @Transform(toUuid)
   @IsOptional()
@@ -75,18 +63,6 @@ export class UpdateDestinationDto {
   @IsString()
   @MaxLength(255)
   slug?: string;
-
-  @ApiPropertyOptional({ example: 'Burj Khalifa' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(150)
-  short_name?: string;
-
-  @ApiPropertyOptional({ example: 'The tallest building in the world.' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(500)
-  short_description?: string;
 
   @ApiPropertyOptional({ example: 'Updated description...' })
   @IsOptional()
@@ -175,25 +151,13 @@ export class UpdateDestinationDto {
   @MaxLength(255)
   email?: string;
 
-  @ApiPropertyOptional({ example: 'https://www.burjkhalifa.ae' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(500)
-  website?: string;
-
-  @ApiPropertyOptional({ example: 0, description: 'Sort priority — lower number appears first' })
+  @ApiPropertyOptional({ example: 0 })
   @IsOptional()
   @Transform(toNumber)
   @Type(() => Number)
   @IsInt({ message: 'priority must be an integer.' })
   @Min(0)
   priority?: number;
-
-  @ApiPropertyOptional({ example: false })
-  @IsOptional()
-  @Transform(toBool)
-  @IsBoolean()
-  featured?: boolean;
 
   @ApiPropertyOptional({ example: true })
   @IsOptional()
