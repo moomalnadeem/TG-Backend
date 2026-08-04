@@ -6,11 +6,9 @@ import {
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { SupabaseService } from '../supabase/supabase.service';
-import { AddItemsDto } from './dto/add-items.dto';
 import { CreateCollectionDto } from './dto/create-collection.dto';
 import { ListCollectionsDto } from './dto/list-collections.dto';
 import { UpdateCollectionDto } from './dto/update-collection.dto';
-import { UpdateItemOrderDto } from './dto/update-item-order.dto';
 
 const ALLOWED_MIME_TYPES      = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const ALLOWED_ICON_MIME_TYPES = [...ALLOWED_MIME_TYPES, 'image/svg+xml'];
@@ -174,7 +172,7 @@ export class CollectionsService {
     return {
       success: true,
       message: 'Collection created successfully.',
-      data: { ...data, images: this.parseImages(data.images), total_items: 0, items: [] },
+      data: { ...data, images: this.parseImages(data.images) },
     };
   }
 
@@ -208,8 +206,7 @@ export class CollectionsService {
 
     if (error) throw new Error(error.message);
 
-    const enriched = await this.attachItemCounts(data ?? []);
-    return { success: true, data: enriched, pagination: { page, limit, total: count ?? 0 } };
+    return { success: true, data: data ?? [], pagination: { page, limit, total: count ?? 0 } };
   }
 
   // ─── Get One ─────────────────────────────────────────────────────────────────
@@ -225,11 +222,9 @@ export class CollectionsService {
     if (error || !rawData) throw new NotFoundException('Collection not found.');
     const data = rawData as Record<string, any>;
 
-    const items = await this.fetchItems(id);
-
     return {
       success: true,
-      data: { ...data, images: this.parseImages(data.images), total_items: items.length, items },
+      data: { ...data, images: this.parseImages(data.images) },
     };
   }
 
@@ -283,12 +278,10 @@ export class CollectionsService {
     if (error) throw new Error(error.message);
     const updated = rawUpdated as Record<string, any>;
 
-    const items = await this.fetchItems(id);
-
     return {
       success: true,
       message: 'Collection updated successfully.',
-      data: { ...updated, images: this.parseImages(updated.images), total_items: items.length, items },
+      data: { ...updated, images: this.parseImages(updated.images) },
     };
   }
 
@@ -311,153 +304,6 @@ export class CollectionsService {
 
     if (error) throw new Error(error.message);
     return { success: true, message: 'Collection deleted successfully.' };
-  }
-
-  // ─── Gallery: Add Images ──────────────────────────────────────────────────────
-
-  async addGalleryImages(
-    id: string,
-    files: Express.Multer.File[],
-  ): Promise<{ success: boolean; message: string; data: { images: string[] } }> {
-    const { data: existing } = await this.supabase.db
-      .from('collections')
-      .select('id, images')
-      .eq('id', id)
-      .is('deleted_at', null)
-      .single();
-
-    if (!existing) throw new NotFoundException('Collection not found.');
-    if (!files?.length) throw new UnprocessableEntityException('No images provided.');
-
-    const newUrls = await this.uploadMultiple(files, 'collection-images', ALLOWED_MIME_TYPES);
-    const current = this.parseImages(existing.images);
-    const merged  = [...current, ...newUrls];
-
-    const { error } = await this.supabase.db
-      .from('collections')
-      .update({ images: JSON.stringify(merged), updated_at: new Date().toISOString() })
-      .eq('id', id);
-
-    if (error) throw new Error(error.message);
-    return { success: true, message: 'Gallery images added successfully.', data: { images: merged } };
-  }
-
-  // ─── Gallery: Remove Image ────────────────────────────────────────────────────
-
-  async removeGalleryImage(
-    id: string,
-    imageUrl: string,
-  ): Promise<{ success: boolean; message: string; data: { images: string[] } }> {
-    const { data: existing } = await this.supabase.db
-      .from('collections')
-      .select('id, images')
-      .eq('id', id)
-      .is('deleted_at', null)
-      .single();
-
-    if (!existing) throw new NotFoundException('Collection not found.');
-
-    const images = this.parseImages(existing.images).filter(url => url !== imageUrl);
-
-    const { error } = await this.supabase.db
-      .from('collections')
-      .update({
-        images: images.length ? JSON.stringify(images) : null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id);
-
-    if (error) throw new Error(error.message);
-    return { success: true, message: 'Gallery image removed successfully.', data: { images } };
-  }
-
-  // ─── Items: Add / Upsert ─────────────────────────────────────────────────────
-
-  async addItems(
-    id: string,
-    dto: AddItemsDto,
-  ): Promise<{ success: boolean; message: string; data: { inserted: number; items: object[] } }> {
-    await this.assertCollectionExists(id);
-
-    const rows = dto.items.map(item => ({
-      collection_id: id,
-      item_type:     item.item_type,
-      item_id:       item.item_id,
-      sort_order:    item.sort_order ?? 0,
-    }));
-
-    const { data, error } = await this.supabase.db
-      .from('collection_items')
-      .upsert(rows, { onConflict: 'collection_id,item_type,item_id', ignoreDuplicates: false })
-      .select('id, collection_id, item_type, item_id, sort_order, created_at');
-
-    if (error) throw new Error(error.message);
-
-    const items = await this.fetchItems(id);
-
-    return {
-      success: true,
-      message: `${data?.length ?? 0} item(s) added/updated in collection.`,
-      data: { inserted: data?.length ?? 0, items },
-    };
-  }
-
-  // ─── Items: Remove ───────────────────────────────────────────────────────────
-
-  async removeItem(
-    collectionId: string,
-    itemId: string,
-  ): Promise<{ success: boolean; message: string; data: { items: object[] } }> {
-    await this.assertCollectionExists(collectionId);
-
-    const { data: existing } = await this.supabase.db
-      .from('collection_items')
-      .select('id')
-      .eq('id', itemId)
-      .eq('collection_id', collectionId)
-      .maybeSingle();
-
-    if (!existing) throw new NotFoundException('Collection item not found.');
-
-    const { error } = await this.supabase.db
-      .from('collection_items')
-      .delete()
-      .eq('id', itemId);
-
-    if (error) throw new Error(error.message);
-
-    const items = await this.fetchItems(collectionId);
-    return { success: true, message: 'Item removed from collection.', data: { items } };
-  }
-
-  // ─── Items: Update Order ─────────────────────────────────────────────────────
-
-  async updateItemOrder(
-    collectionId: string,
-    dto: UpdateItemOrderDto,
-  ): Promise<{ success: boolean; message: string; data: { items: object[] } }> {
-    await this.assertCollectionExists(collectionId);
-
-    await Promise.all(
-      dto.items.map(item =>
-        this.supabase.db
-          .from('collection_items')
-          .update({ sort_order: item.sort_order })
-          .eq('id', item.id)
-          .eq('collection_id', collectionId),
-      ),
-    );
-
-    const items = await this.fetchItems(collectionId);
-    return { success: true, message: 'Item order updated.', data: { items } };
-  }
-
-  // ─── Items: List ─────────────────────────────────────────────────────────────
-
-  async getItems(collectionId: string): Promise<{ success: boolean; data: object[] }> {
-    await this.assertCollectionExists(collectionId);
-    const items = await this.fetchItems(collectionId);
-    return { success: true, data: items };
   }
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
