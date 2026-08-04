@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AttractionsModule } from './attractions/attractions.module';
 import { AuthModule } from './auth/auth.module';
 import { CitiesModule } from './cities/cities.module';
 import { CollectionsModule } from './collections/collections.module';
@@ -30,6 +31,7 @@ import { UsersModule } from './users/users.module';
     CitiesModule,
     DestinationsModule,
     CollectionsModule,
+    AttractionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
