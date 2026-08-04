@@ -10,14 +10,12 @@ import { CreateCityDto } from './dto/create-city.dto';
 import { ListCitiesDto } from './dto/list-cities.dto';
 import { UpdateCityDto } from './dto/update-city.dto';
 
-const ALLOWED_MIME_TYPES     = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-const ALLOWED_FLAG_MIME_TYPES = [...ALLOWED_MIME_TYPES, 'image/svg+xml'];
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
 type UploadedFiles = {
-  flag_image?: Express.Multer.File[];
-  thumbnail?:  Express.Multer.File[];
-  banner?:     Express.Multer.File[];
-  images?:     Express.Multer.File[];
+  thumbnail?: Express.Multer.File[];
+  banner?:    Express.Multer.File[];
+  images?:    Express.Multer.File[];
 };
 
 const SETUP_SQL = `
@@ -26,12 +24,10 @@ const SETUP_SQL = `
     country_id     UUID         NOT NULL,
     module_id      UUID         NOT NULL,
     language_id    UUID,
-    seo_id         UUID,
     name           VARCHAR(255) NOT NULL,
     slug           VARCHAR(255) NOT NULL,
     short_name     VARCHAR(100),
     code           VARCHAR(20),
-    flag_image     VARCHAR(500),
     thumbnail      VARCHAR(500),
     banner         VARCHAR(500),
     images         TEXT,
@@ -44,11 +40,11 @@ const SETUP_SQL = `
   ALTER TABLE cities ADD COLUMN IF NOT EXISTS country_id     UUID;
   ALTER TABLE cities ADD COLUMN IF NOT EXISTS module_id      UUID;
   ALTER TABLE cities ADD COLUMN IF NOT EXISTS language_id    UUID;
-  ALTER TABLE cities ADD COLUMN IF NOT EXISTS seo_id         UUID;
   ALTER TABLE cities ADD COLUMN IF NOT EXISTS short_name     VARCHAR(100);
   ALTER TABLE cities ADD COLUMN IF NOT EXISTS code           VARCHAR(20);
-  ALTER TABLE cities ADD COLUMN IF NOT EXISTS flag_image     VARCHAR(500);
   ALTER TABLE cities ADD COLUMN IF NOT EXISTS thumbnail      VARCHAR(500);
+  ALTER TABLE cities DROP COLUMN IF EXISTS seo_id;
+  ALTER TABLE cities DROP COLUMN IF EXISTS flag_image;
   ALTER TABLE cities ADD COLUMN IF NOT EXISTS banner         VARCHAR(500);
   ALTER TABLE cities ADD COLUMN IF NOT EXISTS images         TEXT;
   ALTER TABLE cities ADD COLUMN IF NOT EXISTS description    TEXT;
@@ -65,8 +61,8 @@ const SETUP_SQL = `
   SELECT pg_notify('pgrst', 'reload schema');
 `;
 
-const CITY_LIST_FIELDS   = 'id, country_id, module_id, language_id, name, slug, short_name, code, flag_image, thumbnail, publish_status, created_at';
-const CITY_DETAIL_FIELDS = 'id, country_id, module_id, language_id, seo_id, name, slug, short_name, code, flag_image, thumbnail, banner, images, description, publish_status, created_at, updated_at';
+const CITY_LIST_FIELDS   = 'id, country_id, module_id, language_id, name, slug, short_name, code, thumbnail, publish_status, created_at';
+const CITY_DETAIL_FIELDS = 'id, country_id, module_id, language_id, name, slug, short_name, code, thumbnail, banner, images, description, publish_status, created_at, updated_at';
 
 @Injectable()
 export class CitiesService {
@@ -125,17 +121,15 @@ export class CitiesService {
     await this.validateRef('countries', dto.country_id, 'name');
     await this.validateRef('modules',   dto.module_id,  'module_name');
     if (dto.language_id) await this.validateRef('languages', dto.language_id, 'name');
-    if (dto.seo_id)      await this.validateSeoRef(dto.seo_id);
 
     const slug = dto.slug ?? this.generateSlug(dto.name);
     await this.assertUniqueSlug(slug);
     await this.assertUniqueName(dto.name, dto.country_id);
 
-    const [flagUrl, thumbnailUrl, bannerUrl, imageUrls] = await Promise.all([
-      files?.flag_image?.[0] ? this.uploadFile(files.flag_image[0], 'city-flags',      ALLOWED_FLAG_MIME_TYPES) : Promise.resolve(null),
-      files?.thumbnail?.[0]  ? this.uploadFile(files.thumbnail[0],  'city-thumbnails', ALLOWED_MIME_TYPES)      : Promise.resolve(null),
-      files?.banner?.[0]     ? this.uploadFile(files.banner[0],     'city-banners',    ALLOWED_MIME_TYPES)      : Promise.resolve(null),
-      files?.images?.length  ? this.uploadMultiple(files.images,    'city-images',     ALLOWED_MIME_TYPES)      : Promise.resolve([]),
+    const [thumbnailUrl, bannerUrl, imageUrls] = await Promise.all([
+      files?.thumbnail?.[0] ? this.uploadFile(files.thumbnail[0], 'city-thumbnails', ALLOWED_MIME_TYPES) : Promise.resolve(null),
+      files?.banner?.[0]    ? this.uploadFile(files.banner[0],    'city-banners',    ALLOWED_MIME_TYPES) : Promise.resolve(null),
+      files?.images?.length ? this.uploadMultiple(files.images,   'city-images',     ALLOWED_MIME_TYPES) : Promise.resolve([]),
     ]);
 
     const { data, error } = await this.supabase.db
@@ -143,17 +137,15 @@ export class CitiesService {
       .insert({
         country_id:     dto.country_id,
         module_id:      dto.module_id,
-        language_id:    dto.language_id    ?? null,
-        seo_id:         dto.seo_id         ?? null,
+        language_id:    dto.language_id ?? null,
         name:           dto.name,
         slug,
-        short_name:     dto.short_name     ?? null,
-        code:           dto.code           ?? null,
-        flag_image:     flagUrl,
+        short_name:     dto.short_name  ?? null,
+        code:           dto.code        ?? null,
         thumbnail:      thumbnailUrl,
         banner:         bannerUrl,
         images:         imageUrls.length ? JSON.stringify(imageUrls) : null,
-        description:    dto.description    ?? null,
+        description:    dto.description ?? null,
         publish_status: dto.publish_status,
       })
       .select(CITY_DETAIL_FIELDS)
@@ -233,10 +225,9 @@ export class CitiesService {
 
     if (!existing) throw new NotFoundException('City not found.');
 
-    if (dto.country_id)  await this.validateRef('countries', dto.country_id, 'name');
-    if (dto.module_id)   await this.validateRef('modules',   dto.module_id,  'module_name');
+    if (dto.country_id)  await this.validateRef('countries', dto.country_id,  'name');
+    if (dto.module_id)   await this.validateRef('modules',   dto.module_id,   'module_name');
     if (dto.language_id) await this.validateRef('languages', dto.language_id, 'name');
-    if (dto.seo_id)      await this.validateSeoRef(dto.seo_id);
 
     const updates: Record<string, any> = { ...dto, updated_at: new Date().toISOString() };
 
@@ -249,15 +240,13 @@ export class CitiesService {
     const effectiveCountryId = dto.country_id ?? existing.country_id;
     if (dto.name) await this.assertUniqueName(dto.name, effectiveCountryId, id);
 
-    const [flagUrl, thumbnailUrl, bannerUrl] = await Promise.all([
-      files?.flag_image?.[0] ? this.uploadFile(files.flag_image[0], 'city-flags',      ALLOWED_FLAG_MIME_TYPES) : Promise.resolve(null),
-      files?.thumbnail?.[0]  ? this.uploadFile(files.thumbnail[0],  'city-thumbnails', ALLOWED_MIME_TYPES)      : Promise.resolve(null),
-      files?.banner?.[0]     ? this.uploadFile(files.banner[0],     'city-banners',    ALLOWED_MIME_TYPES)      : Promise.resolve(null),
+    const [thumbnailUrl, bannerUrl] = await Promise.all([
+      files?.thumbnail?.[0] ? this.uploadFile(files.thumbnail[0], 'city-thumbnails', ALLOWED_MIME_TYPES) : Promise.resolve(null),
+      files?.banner?.[0]    ? this.uploadFile(files.banner[0],    'city-banners',    ALLOWED_MIME_TYPES) : Promise.resolve(null),
     ]);
 
-    if (flagUrl)      updates.flag_image = flagUrl;
-    if (thumbnailUrl) updates.thumbnail  = thumbnailUrl;
-    if (bannerUrl)    updates.banner     = bannerUrl;
+    if (thumbnailUrl) updates.thumbnail = thumbnailUrl;
+    if (bannerUrl)    updates.banner    = bannerUrl;
 
     if (files?.images?.length) {
       const newUrls  = await this.uploadMultiple(files.images, 'city-images', ALLOWED_MIME_TYPES);
@@ -403,15 +392,6 @@ export class CitiesService {
       .eq('id', id)
       .maybeSingle();
     if (!data) throw new NotFoundException(`${table.slice(0, -1)} not found.`);
-  }
-
-  private async validateSeoRef(id: string) {
-    const { data } = await this.supabase.db
-      .from('seo')
-      .select('id')
-      .eq('id', id)
-      .maybeSingle();
-    if (!data) throw new NotFoundException('SEO record not found.');
   }
 
   private async uploadFile(

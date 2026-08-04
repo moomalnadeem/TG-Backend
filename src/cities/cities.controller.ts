@@ -81,14 +81,12 @@ export class CitiesController {
         country_id:     { type: 'string', format: 'uuid', example: 'uuid-of-country' },
         module_id:      { type: 'string', format: 'uuid', example: 'uuid-of-module' },
         language_id:    { type: 'string', format: 'uuid', example: 'uuid-of-language' },
-        seo_id:         { type: 'string', format: 'uuid', example: 'uuid-of-seo' },
         name:           { type: 'string', example: 'Dubai' },
         slug:           { type: 'string', example: 'dubai', description: 'Auto-generated from name if omitted' },
         short_name:     { type: 'string', example: 'DXB' },
         code:           { type: 'string', example: 'DXB' },
         description:    { type: 'string', example: 'The most populous city in the UAE.' },
         publish_status: { type: 'boolean', example: true },
-        flag_image:     { type: 'string', format: 'binary', description: 'Flag image (jpg, png, webp, svg)' },
         thumbnail:      { type: 'string', format: 'binary', description: 'Thumbnail image (jpg, png, webp)' },
         banner:         { type: 'string', format: 'binary', description: 'Banner image (jpg, png, webp)' },
         images:         { type: 'array', items: { type: 'string', format: 'binary' }, description: 'Gallery images (multiple)' },
@@ -98,6 +96,7 @@ export class CitiesController {
   @ApiResponse({ status: 201, description: 'City created successfully' })
   @ApiResponse({ status: 400, description: 'Validation error' })
   @ApiResponse({ status: 404, description: 'Country, module, or language not found' })
+
   @ApiResponse({ status: 409, description: 'Slug or city name in this country already exists' })
   create(@Body() dto: CreateCityDto, @UploadedFiles() files: any) {
     return this.citiesService.create(dto, groupFiles(files));
@@ -149,16 +148,14 @@ export class CitiesController {
         country_id:     { type: 'string', format: 'uuid' },
         module_id:      { type: 'string', format: 'uuid' },
         language_id:    { type: 'string', format: 'uuid' },
-        seo_id:         { type: 'string', format: 'uuid' },
         name:           { type: 'string', example: 'Dubai' },
         slug:           { type: 'string', example: 'dubai' },
         short_name:     { type: 'string', example: 'DXB' },
         code:           { type: 'string', example: 'DXB' },
         description:    { type: 'string' },
         publish_status: { type: 'boolean' },
-        flag_image:     { type: 'string', format: 'binary' },
-        thumbnail:      { type: 'string', format: 'binary' },
-        banner:         { type: 'string', format: 'binary' },
+        thumbnail:      { type: 'string', format: 'binary', description: 'Replaces existing thumbnail' },
+        banner:         { type: 'string', format: 'binary', description: 'Replaces existing banner' },
         images:         { type: 'array', items: { type: 'string', format: 'binary' }, description: 'New images to append to gallery' },
       },
     },
