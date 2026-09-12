@@ -194,6 +194,19 @@ export class WebsiteAuthService {
     };
   }
 
+  // ─── Logout ──────────────────────────────────────────────────────────────────
+
+  // Mirrors AuthService.logout — OTP and password logins share the same
+  // refresh_token column, so both flows end the same way.
+  async logout(userId: string) {
+    await this.supabase.db
+      .from('users')
+      .update({ refresh_token: null })
+      .eq('id', userId);
+
+    return { success: true, message: 'Logout successful.' };
+  }
+
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 
   private normalizeIdentifier(dto: SendOtpDto): string {
