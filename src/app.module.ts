@@ -2,16 +2,38 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AttractionsModule } from './attractions/attractions.module';
 import { AuthModule } from './auth/auth.module';
+import { CitiesModule } from './cities/cities.module';
+import { CollectionsModule } from './collections/collections.module';
+import { DestinationsModule } from './destinations/destinations.module';
+import { CountriesModule } from './countries/countries.module';
+import { LanguagesModule } from './languages/languages.module';
+import { AppModulesModule } from './modules/modules.module';
+import { OrganizationsModule } from './organizations/organizations.module';
+import { RolesModule } from './roles/roles.module';
+import { SeoModule } from './seo/seo.module';
 import { SupabaseModule } from './supabase/supabase.module';
 import { UsersModule } from './users/users.module';
+import { WebsiteAuthModule } from './website-auth/website-auth.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     SupabaseModule,
     AuthModule,
+    WebsiteAuthModule,
     UsersModule,
+    RolesModule,
+    AppModulesModule,
+    SeoModule,
+    LanguagesModule,
+    OrganizationsModule,
+    CountriesModule,
+    CitiesModule,
+    DestinationsModule,
+    CollectionsModule,
+    AttractionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

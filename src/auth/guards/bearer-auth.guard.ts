@@ -14,8 +14,8 @@ export class BearerAuthGuard extends AuthGuard('bearer') {
     const request = context.switchToHttp().getRequest();
     const authHeader: string | undefined = request.headers['authorization'];
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Bearer token is required');
+    if (!authHeader) {
+      throw new UnauthorizedException('Access token is required');
     }
 
     return super.canActivate(context);

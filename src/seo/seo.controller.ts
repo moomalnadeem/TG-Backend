@@ -1,0 +1,209 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { BearerAuthGuard } from '../auth/guards/bearer-auth.guard';
+import { SITEMAP_FREQUENCIES } from './dto/create-seo.dto';
+import { CreateSeoDto } from './dto/create-seo.dto';
+import { ListSeoDto } from './dto/list-seo.dto';
+import { UpdateSeoDto } from './dto/update-seo.dto';
+import { UpsertSeoDto } from './dto/upsert-seo.dto';
+import { SeoService } from './seo.service';
+
+@ApiTags('SEO')
+@ApiBearerAuth('bearer')
+@UseGuards(BearerAuthGuard)
+@Controller('api/seo')
+export class SeoController {
+  constructor(private readonly seoService: SeoService) {}
+
+  // ─── Setup ───────────────────────────────────────────────────────────────────
+
+  @Post('setup')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Migrate SEO table — adds all columns and indexes' })
+  @ApiResponse({ status: 200, description: 'SEO table migrated successfully' })
+  setup() {
+    return this.seoService.setup();
+  }
+
+  // ─── Create ──────────────────────────────────────────────────────────────────
+
+  @Post()
+  @UseInterceptors(AnyFilesInterceptor())
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Create an SEO record' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['title', 'description', 'sitemap_frequency', 'module_id', 'item_id', 'publish_status'],
+      properties: {
+        title:             { type: 'string', maxLength: 255, example: 'Dubai Tours - Best Packages' },
+        description:       { type: 'string', example: 'Explore Dubai with our top-rated tour packages...' },
+        keywords:          { type: 'string', example: 'dubai, tours, travel', description: 'Comma-separated keywords' },
+        canonical_url:     { type: 'string', example: 'https://example.com/tours/dubai' },
+        sitemap_priority:  { type: 'number', example: 0.8, description: 'Value between 0.0 and 1.0' },
+        sitemap_frequency: { type: 'string', enum: [...SITEMAP_FREQUENCIES], example: 'weekly' },
+        module_id:         { type: 'string', format: 'uuid', example: 'uuid-of-module', description: 'From GET /api/modules/dropdown' },
+        item_id:           { type: 'string', format: 'uuid', example: 'uuid-of-item', description: 'From GET /api/items/dropdown?moduleId=...' },
+        disable_for_bots:  { type: 'boolean', example: false, description: 'Enable NoIndex/NoFollow' },
+        publish_status:    { type: 'boolean', example: true },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'SEO record created successfully' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 404, description: 'Module or item not found' })
+  @ApiResponse({ status: 409, description: 'SEO record already exists for this module and item' })
+  create(@Body() dto: CreateSeoDto) {
+    return this.seoService.create(dto);
+  }
+
+  // ─── List ────────────────────────────────────────────────────────────────────
+
+  @Get()
+  @ApiOperation({ summary: 'List SEO records with pagination, search, filter, and sort' })
+  @ApiQuery({ name: 'page',           required: false, example: 1 })
+  @ApiQuery({ name: 'limit',          required: false, example: 10 })
+  @ApiQuery({ name: 'search',         required: false, example: 'dubai', description: 'Search by title, description, or keywords' })
+  @ApiQuery({ name: 'module_id',      required: false, description: 'Filter by module UUID' })
+  @ApiQuery({ name: 'publish_status', required: false, example: true })
+  @ApiQuery({ name: 'sortBy',         required: false, enum: ['title', 'created_at', 'updated_at'] })
+  @ApiQuery({ name: 'sortOrder',      required: false, enum: ['ASC', 'DESC'] })
+  @ApiResponse({ status: 200, description: 'Paginated list of SEO records with module and item data' })
+  findAll(@Query() query: ListSeoDto) {
+    return this.seoService.findAll(query);
+  }
+
+  // ─── Get by item_id ──────────────────────────────────────────────────────────
+
+  @Get('item/:item_id')
+  @ApiOperation({ summary: 'Get SEO record by item_id' })
+  @ApiParam({ name: 'item_id', description: 'Item UUID (Tour, Blog, User, etc.)' })
+  @ApiQuery({ name: 'module_id', required: false, description: 'Optional — filter by module UUID when the item appears in multiple modules' })
+  @ApiResponse({ status: 200, description: 'SEO record with module and item details' })
+  @ApiResponse({ status: 404, description: 'No SEO record found for this item' })
+  findByItem(
+    @Param('item_id')   itemId:    string,
+    @Query('module_id') moduleId?: string,
+  ) {
+    return this.seoService.findByItem(itemId, moduleId);
+  }
+
+  // ─── Get One ─────────────────────────────────────────────────────────────────
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Get SEO record by SEO ID or Item ID',
+    description: 'Accepts either a SEO record UUID or an Item UUID. Tries to match by seo_id first — if not found, falls back to item_id.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'SEO record UUID **or** Item UUID (Tour, Blog, User, etc.)',
+    example: 'uuid-of-seo-or-item',
+  })
+  @ApiResponse({ status: 200, description: 'SEO record with module and item details' })
+  @ApiResponse({ status: 404, description: 'SEO record not found by seo_id or item_id' })
+  findOne(@Param('id') id: string) {
+    return this.seoService.findOne(id);
+  }
+
+  // ─── Update ──────────────────────────────────────────────────────────────────
+
+  @Put(':id')
+  @UseInterceptors(AnyFilesInterceptor())
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Update an SEO record' })
+  @ApiParam({ name: 'id', description: 'SEO record UUID' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        title:             { type: 'string', maxLength: 255 },
+        description:       { type: 'string' },
+        keywords:          { type: 'string' },
+        canonical_url:     { type: 'string' },
+        sitemap_priority:  { type: 'number', description: '0.0 – 1.0' },
+        sitemap_frequency: { type: 'string', enum: [...SITEMAP_FREQUENCIES] },
+        module_id:         { type: 'string', format: 'uuid' },
+        item_id:           { type: 'string', format: 'uuid' },
+        disable_for_bots:  { type: 'boolean' },
+        publish_status:    { type: 'boolean' },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'SEO record updated successfully' })
+  @ApiResponse({ status: 404, description: 'SEO record not found' })
+  @ApiResponse({ status: 409, description: 'SEO record already exists for this module and item' })
+  update(@Param('id') id: string, @Body() dto: UpdateSeoDto) {
+    return this.seoService.update(id, dto);
+  }
+
+  // ─── Upsert by Item ──────────────────────────────────────────────────────────
+
+  @Put('item/:item_id')
+  @UseInterceptors(AnyFilesInterceptor())
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Upsert SEO by item_id — updates if item_id exists, creates if not',
+    description: 'Looks up SEO by item_id only. If a record exists, updates all fields except item_id. If no record exists, creates a new one. item_id is always taken from the URL — never from the body.',
+  })
+  @ApiParam({ name: 'item_id', description: 'Item UUID' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['title', 'description', 'sitemap_frequency', 'module_id', 'publish_status'],
+      properties: {
+        title:             { type: 'string', maxLength: 255, example: 'Dubai Tours - Best Packages' },
+        description:       { type: 'string', example: 'Explore Dubai with our top-rated tour packages...' },
+        keywords:          { type: 'string', example: 'dubai, tours, travel' },
+        canonical_url:     { type: 'string', example: 'https://example.com/tours/dubai' },
+        sitemap_priority:  { type: 'number', example: 0.8, description: '0.0 – 1.0' },
+        sitemap_frequency: { type: 'string', enum: [...SITEMAP_FREQUENCIES], example: 'weekly' },
+        module_id:         { type: 'string', format: 'uuid', example: 'uuid-of-module' },
+        disable_for_bots:  { type: 'boolean', example: false },
+        publish_status:    { type: 'boolean', example: true },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'SEO record updated or created successfully' })
+  @ApiResponse({ status: 404, description: 'Module or item not found' })
+  upsertByItem(
+    @Param('item_id') itemId: string,
+    @Body() dto: UpsertSeoDto,
+  ) {
+    return this.seoService.upsertByItem(itemId, dto);
+  }
+
+  // ─── Delete ──────────────────────────────────────────────────────────────────
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Soft delete an SEO record' })
+  @ApiParam({ name: 'id', description: 'SEO record UUID' })
+  @ApiResponse({ status: 200, description: 'SEO record deleted successfully' })
+  @ApiResponse({ status: 404, description: 'SEO record not found or already deleted' })
+  remove(@Param('id') id: string) {
+    return this.seoService.remove(id);
+  }
+}
