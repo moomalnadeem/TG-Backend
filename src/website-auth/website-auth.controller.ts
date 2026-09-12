@@ -1,5 +1,6 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, HttpCode, HttpStatus, Post, Req, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { WebsiteAuthService } from './website-auth.service';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
@@ -62,5 +63,18 @@ export class WebsiteAuthController {
   @ApiResponse({ status: 401, description: 'Invalid, expired, or already-used OTP' })
   verifyOtp(@Body() dto: VerifyOtpDto) {
     return this.websiteAuthService.verifyOtp(dto);
+  }
+
+  // ─── Logout ──────────────────────────────────────────────────────────────────
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('bearer')
+  @ApiOperation({ summary: 'Logout — clears stored refresh token, ending the session' })
+  @ApiResponse({ status: 200, schema: { example: { success: true, message: 'Logout successful.' } } })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  logout(@Req() req: any) {
+    return this.websiteAuthService.logout(req.user.id);
   }
 }
