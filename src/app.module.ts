@@ -15,12 +15,14 @@ import { RolesModule } from './roles/roles.module';
 import { SeoModule } from './seo/seo.module';
 import { SupabaseModule } from './supabase/supabase.module';
 import { UsersModule } from './users/users.module';
+import { WebsiteAuthModule } from './website-auth/website-auth.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     SupabaseModule,
     AuthModule,
+    WebsiteAuthModule,
     UsersModule,
     RolesModule,
     AppModulesModule,

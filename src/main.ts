@@ -6,6 +6,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 const API_MODULES = [
   { name: 'Authentication', tag: 'Authentication',  path: 'auth',      color: '#4f46e5', icon: '🔐' },
+  { name: 'Website Auth',   tag: 'Website Auth',    path: 'website-auth', color: '#16a34a', icon: '📱' },
   { name: 'Roles',          tag: 'Admin — Roles',   path: 'roles',     color: '#0891b2', icon: '🎭' },
   { name: 'Modules',        tag: 'Modules',         path: 'modules',   color: '#059669', icon: '📦' },
   { name: 'Users',          tag: 'Users',           path: 'users',     color: '#dc2626', icon: '👥' },
